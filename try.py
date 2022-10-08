@@ -1,5 +1,9 @@
-a = [1,2,3,4,5]
+import torch.nn as nn
+import pandas as pd
+import numpy as np
 
-b = [sum(a[:i]+a[i+1:]) if i!=len(a) else sum(a) for i in range(len(a))]
+x = np.zeros((3,3))
+print(x)
 
-print(b)
+
+
