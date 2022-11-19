@@ -1,9 +1,6 @@
-import torch.nn as nn
 import pandas as pd
-import numpy as np
 
-x = np.zeros((3,3))
-print(x)
+xls = pd.ExcelFile("/home/alican/Documents/yoloV5/INbreast Release 1.0/INbreast.xls")
+sheetX = xls.parse(0)
 
-
-
+print(sheetX[:][:410])
