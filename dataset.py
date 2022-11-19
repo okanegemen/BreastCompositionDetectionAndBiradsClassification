@@ -21,9 +21,12 @@ class DICOM_Dataset(datasets.VisionDataset):
 
         dicom_names,filename,xml_names,CC_or_ML = [],[],[],[]
         for name in os.listdir(os.path.join(root,dicom_folder_name)):
-            dicom_names.append(name)
-            filename.append(int(float(name.split("_")[0])))
-            xml_names.append(name.split("_")[0]+".xml" )
+            if name != ".DS_Store":
+                dicom_names.append(name)
+                filename.append(int(float(name.split("_")[0])))
+                xml_names.append(name.split("_")[0]+".xml" )
+
+            
         self.dicom_info = pd.DataFrame(list(zip(dicom_names,filename,xml_names)),columns=["dicom_names","File Name","xml_names"])
         self.merged = self.merge_xls_and_info()
 
@@ -56,7 +59,7 @@ class DICOM_Dataset(datasets.VisionDataset):
         return self.merge_xls_and_info()
 
 if __name__=="__main__":
-    root = r"/home/alican/Documents/yoloV5/INbreast Release 1.0"
+    root = r"/Users/okanegemen/yoloV5/INbreast Release 1.0"
 
     df = DICOM_Dataset(root).return_df()
     print(df.head(10))
