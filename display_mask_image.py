@@ -35,7 +35,7 @@ def dicom_open(base,pass_dicom):
 
 if __name__ == "__main__":
     # Full path of the DICOM file is passed in base
-    base = "/home/alican/Documents/yoloV5/sample"
+    base = "/home/alican/Documents/AnkAI/yoloV5/sample"
 
     pass_dicom = "24065530_d8205a09c8173f44_MG_L_ML_ANON.dcm"  # file name is 1-12.dcm
     data = dicom_open(base,pass_dicom)
