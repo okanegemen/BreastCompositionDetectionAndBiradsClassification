@@ -35,11 +35,12 @@ def dicom_open(base,pass_dicom):
 
 if __name__ == "__main__":
     # Full path of the DICOM file is passed in base
-    base = r"/home/alican/Documents/yoloV5/sample"
-    pass_dicom = "22580244_5530d5782fc89dd7_MG_R_ML_ANON.dcm"  # file name is 1-12.dcm
+    base = "/home/alican/Documents/yoloV5/sample"
+
+    pass_dicom = "24065530_d8205a09c8173f44_MG_L_ML_ANON.dcm"  # file name is 1-12.dcm
     data = dicom_open(base,pass_dicom)
 
-    annotations = "/home/alican/Documents/yoloV5/sample/22580244.xml"
+    annotations = base+"/24065530.xml"
     annotations = open_annotation(annotations)
     mask = convert_points_to_boolmask(annotations,data.shape)
     
