@@ -19,7 +19,7 @@ class DICOM_Dataset(datasets.VisionDataset):
 
         self.xls = self.open_xls()
 
-        dicom_names,filename,xml_names,CC_or_ML = [],[],[],[]
+        dicom_names,filename,xml_names = [],[],[]
         for name in os.listdir(os.path.join(root,dicom_folder_name)):
             if name != ".DS_Store":
                 dicom_names.append(name)
@@ -59,7 +59,7 @@ class DICOM_Dataset(datasets.VisionDataset):
         return self.merge_xls_and_info()
 
 if __name__=="__main__":
-    root = r"/Users/okanegemen/yoloV5/INbreast Release 1.0"
+    root = "/home/alican/Documents/yoloV5/INbreast Release 1.0"
 
     df = DICOM_Dataset(root).return_df()
     print(df.head(10))
