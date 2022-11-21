@@ -6,3 +6,5 @@ xml-python
 numpy
 opencv-python
 xlrd
+Pillow
+pandas

@@ -2,7 +2,8 @@
 
 from .unet_parts import *
 
-
+up = nn.ConvTranspose2d(1024, 512, kernel_size=2, stride=2)
+conv = DoubleConv(1024, 512)
 class UNet(nn.Module):
     def __init__(self, n_channels, n_classes, bilinear=False):
         super(UNet, self).__init__()
