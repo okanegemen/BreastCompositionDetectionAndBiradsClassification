@@ -7,7 +7,4 @@ dev = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 rand = torch.rand(1,1,500,500).to(dev)
 rand = Variable(rand)
 
-for i in range(1000):
-    net = UNet(1,1,False).to(dev)
-
-print(net(rand).size())
+net = UNet(1,1,False).to(dev)
