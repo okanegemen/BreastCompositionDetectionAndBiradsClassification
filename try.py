@@ -1,6 +1,13 @@
-import pandas as pd
+from Pytorch_model.unet.unet_model import UNet
+import torch
+from torch.autograd import Variable
 
-xls = pd.ExcelFile("/home/alican/Documents/yoloV5/INbreast Release 1.0/INbreast.xls")
-sheetX = xls.parse(0)
+dev = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
-print(sheetX[:][:410])
+rand = torch.rand(1,1,500,500).to(dev)
+rand = Variable(rand)
+
+for i in range(1000):
+    net = UNet(1,1,False).to(dev)
+
+print(net(rand).size())
