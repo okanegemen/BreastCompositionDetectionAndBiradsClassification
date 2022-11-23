@@ -266,10 +266,10 @@ class SegNet(nn.Module):
         x_41 = F.relu(self.encoder_conv_41(x_40))
         x_42 = F.relu(self.encoder_conv_42(x_41))
         x_4, indices_4 = F.max_pool2d(x_42, kernel_size=2, stride=2, return_indices=True)
-
         # Decoder
 
         dim_d = x_4.size()
+
 
         # Decoder Stage - 5
         x_4d = F.max_unpool2d(x_4, indices_4, kernel_size=2, stride=2, output_size=dim_4)
@@ -277,6 +277,7 @@ class SegNet(nn.Module):
         x_41d = F.relu(self.decoder_convtr_41(x_42d))
         x_40d = F.relu(self.decoder_convtr_40(x_41d))
         dim_4d = x_40d.size()
+        print(dim_4d)
 
         # Decoder Stage - 4
         x_3d = F.max_unpool2d(x_40d, indices_3, kernel_size=2, stride=2, output_size=dim_3)
@@ -284,6 +285,7 @@ class SegNet(nn.Module):
         x_31d = F.relu(self.decoder_convtr_31(x_32d))
         x_30d = F.relu(self.decoder_convtr_30(x_31d))
         dim_3d = x_30d.size()
+        print(dim_3d)
 
         # Decoder Stage - 3
         x_2d = F.max_unpool2d(x_30d, indices_2, kernel_size=2, stride=2, output_size=dim_2)
@@ -291,19 +293,21 @@ class SegNet(nn.Module):
         x_21d = F.relu(self.decoder_convtr_21(x_22d))
         x_20d = F.relu(self.decoder_convtr_20(x_21d))
         dim_2d = x_20d.size()
+        print(dim_2d)
 
         # Decoder Stage - 2
         x_1d = F.max_unpool2d(x_20d, indices_1, kernel_size=2, stride=2, output_size=dim_1)
         x_11d = F.relu(self.decoder_convtr_11(x_1d))
         x_10d = F.relu(self.decoder_convtr_10(x_11d))
         dim_1d = x_10d.size()
+        print(dim_1d)
 
         # Decoder Stage - 1
         x_0d = F.max_unpool2d(x_10d, indices_0, kernel_size=2, stride=2, output_size=dim_0)
         x_01d = F.relu(self.decoder_convtr_01(x_0d))
         x_00d = self.decoder_convtr_00(x_01d)
         dim_0d = x_00d.size()
-
+        print(dim_0d)
         x_softmax = F.softmax(x_00d, dim=1)
 
 
@@ -323,4 +327,32 @@ class SegNet(nn.Module):
 
 
         return x_00d, x_softmax
+
+import pydicom as dicom 
+import matplotlib.pyplot as plt
+import cv2 as cv
+
+import numpy as np
+
+
+path = "/Users/okanegemen/yoloV5/INbreast Release 1.0/AllDICOMs/20586908_6c613a14b80a8591_MG_R_CC_ANON.dcm"
+
+dicom_img = dicom.dcmread(path)
+
+numpy_pixels = dicom_img.pixel_array
+img = np.resize(numpy_pixels,(600,600))
+img = np.array(img,dtype="float32")
+
+
+
+tensor = torch.from_numpy(img)
+tensor = tensor.float()
+tensor = torch.reshape(tensor,[1,1,600,600])
+#tensor = torch.view_as_real(tensor)
+print(tensor.size())
+
+model = SegNet(1,64)
+
+output = model(tensor)
+
 
