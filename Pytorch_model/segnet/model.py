@@ -328,12 +328,10 @@ class SegNet(nn.Module):
 
         return x_00d, x_softmax
 
-import pydicom as dicom 
-import matplotlib.pyplot as plt
+from PIL import Image
 import cv2 as cv
-
 import numpy as np
-
+import pydicom as dicom 
 
 path = "/Users/okanegemen/yoloV5/INbreast Release 1.0/AllDICOMs/20586908_6c613a14b80a8591_MG_R_CC_ANON.dcm"
 
@@ -349,10 +347,16 @@ tensor = torch.from_numpy(img)
 tensor = tensor.float()
 tensor = torch.reshape(tensor,[1,1,600,600])
 #tensor = torch.view_as_real(tensor)
-print(tensor.size())
-
 model = SegNet(1,64)
 
-output = model(tensor)
+output,_ = model(tensor)
+
+numpy_img = output.cpu().detach().numpy()
+
+numpy_img = np.resize(numpy_img,(600,600))
+
+
+image = Image.fromarray(numpy_img,'L')
+image.show()
 
 

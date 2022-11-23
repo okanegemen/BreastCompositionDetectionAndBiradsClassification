@@ -148,5 +148,44 @@ class ConSegnetsModel(nn.Module):
         sec_dec_d5 = sec_dec_out5.size()
         dilation_out= self.dilation(sec_dec_out5)
         out = self.conv1x1(dilation_out)
-        
         return out
+
+import pydicom as dicom 
+from PIL import Image
+import cv2 as cv
+import numpy as np
+import torchvision.transforms as T
+
+TRY = input("if you want try model with image please write TRY: ")
+if TRY == "TRY":
+
+    from PIL import Image
+    import cv2 as cv
+    import numpy as np
+    import pydicom as dicom 
+
+    path = "/Users/okanegemen/yoloV5/INbreast Release 1.0/AllDICOMs/20586908_6c613a14b80a8591_MG_R_CC_ANON.dcm"
+
+    dicom_img = dicom.dcmread(path)
+
+    numpy_pixels = dicom_img.pixel_array
+    img = np.resize(numpy_pixels,(600,600))
+    img = np.array(img,dtype="float32")
+
+
+
+    tensor = torch.from_numpy(img)
+    tensor = tensor.float()
+    tensor = torch.reshape(tensor,[1,1,600,600])
+    #tensor = torch.view_as_real(tensor)
+    model = ConSegnetsModel(1)
+
+    output = model(tensor)
+
+    numpy_img = output.cpu().detach().numpy()
+
+    numpy_img = np.resize(numpy_img,(600,600))
+
+
+    image = Image.fromarray(numpy_img,'L')
+    image.show()
