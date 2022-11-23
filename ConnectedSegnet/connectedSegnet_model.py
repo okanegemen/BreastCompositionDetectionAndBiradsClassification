@@ -156,8 +156,8 @@ import cv2 as cv
 import numpy as np
 import torchvision.transforms as T
 
-TRY = input("if you want try model with image please write TRY: ")
-if TRY == "TRY":
+
+if __name__== "__main__":
 
     from PIL import Image
     import cv2 as cv
