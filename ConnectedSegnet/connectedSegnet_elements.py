@@ -86,7 +86,7 @@ def conv1x1(in_channels,out_channels):
     return conv1 
 #dilation layer
 def dilationConv(in_channels,out_channels,):
-    dilation = nn.Conv2d(in_channels=in_channels,out_channels=out_channels,kernel_size=3,padding = 1,dilation=3,bias=False)
+    dilation = nn.Conv2d(in_channels=in_channels,out_channels=out_channels,padding =1,dilation=3,bias=False)
     return dilation
     
     
