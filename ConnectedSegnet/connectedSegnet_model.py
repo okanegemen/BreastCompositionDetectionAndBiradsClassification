@@ -150,15 +150,11 @@ class ConSegnetsModel(nn.Module):
         out = self.conv1x1(dilation_out)
         return out
 
-import pydicom as dicom 
-from PIL import Image
-import cv2 as cv
-import numpy as np
-import torchvision.transforms as T
+
 
 
 if __name__== "__main__":
-
+    import torchvision.transforms as T
     from PIL import Image
     import cv2 as cv
     import numpy as np
