@@ -1,2 +1,0 @@
-liste = list()
-a = 
