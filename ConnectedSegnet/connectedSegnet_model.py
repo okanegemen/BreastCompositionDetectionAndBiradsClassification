@@ -6,8 +6,9 @@ import torch.functional as F
 
 
 class ConSegnetsModel(nn.Module):
-    def __init__(self,in_channels):
+    def __init__(self,in_channels,n_classes):
         super(ConSegnetsModel,self).__init__()
+        
         # ###############################
         # First Segnet Encoder Part
         # ###############################
@@ -51,7 +52,7 @@ class ConSegnetsModel(nn.Module):
         self.avg = nn.AdaptiveAvgPool2d((1,1))
         self.fc1 = nn.Linear(64,32)
         self.fc2 = nn.Linear(32,16)
-        self.fc3 = nn.Linear(16,5)
+        self.fc3 = nn.Linear(16,n_classes)
         
        
         
