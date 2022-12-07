@@ -49,10 +49,10 @@ class ConSegnetsModel(nn.Module):
         self.secondDecoder4 = DoubleConv(128,64)
         self.secondDecoder5 = DoubleConv(64,64)
         self.outconv=nn.Conv2d(64,1,kernel_size=1)
-        self.avg = nn.AdaptiveAvgPool2d((1,1))
-        self.fc1 = nn.Linear(64,32)
-        self.fc2 = nn.Linear(32,16)
-        self.fc3 = nn.Linear(16,n_classes)
+        self.avg = nn.AdaptiveAvgPool2d((20,20))
+        # self.fc1 = nn.Linear(64,32)
+        # self.fc2 = nn.Linear(32,16)
+        # self.fc3 = nn.Linear(16,n_classes)
         
        
         
@@ -163,53 +163,49 @@ class ConSegnetsModel(nn.Module):
         dilation_out= self.dilation(sec_dec_out5)
         out1 = self.conv1x1(dilation_out)
 
-
         sec_dec_out5 = self.avg(sec_dec_out5)
         sec_dec_out5 = sec_dec_out5.view(sec_dec_out5.size(0),-1)
         out2 = self.fc1(sec_dec_out5)
         out2 = self.fc2(out2)
         out2 = self.fc3(out2)
         
+        
 
 
 
 
-        return out1,out2
+        return out2
 
 
 
 
-if __name__== "__main__":
-    import torchvision.transforms as T
-    from PIL import Image
-    import cv2 as cv
-    import numpy as np
-    import pydicom as dicom 
+# if __name__== "__main__":
 
-    path = "/Users/okanegemen/yoloV5/INbreast Release 1.0/AllDICOMs/20586908_6c613a14b80a8591_MG_R_CC_ANON.dcm"
+#     from linear_block import *
+#     import torchvision.transforms as T
+#     from PIL import Image
+#     import cv2 as cv
+#     import numpy as np
+#     import pydicom as dicom 
 
-    dicom_img = dicom.dcmread(path)
+#     path = "/Users/okanegemen/yoloV5/INbreast Release 1.0/AllDICOMs/20586908_6c613a14b80a8591_MG_R_CC_ANON.dcm"
 
-    numpy_pixels = dicom_img.pixel_array
-    img = np.resize(numpy_pixels,(600,600))
-    img = np.array(img,dtype="float32")
+#     dicom_img = dicom.dcmread(path)
 
-
-
-    tensor = torch.from_numpy(img)
-    tensor = tensor.float()
-    tensor = torch.reshape(tensor,[1,1,600,600])
-    #tensor = torch.view_as_real(tensor)
-    model = ConSegnetsModel(1)
-
-    output1,output2 = model(tensor)
-
-    numpy_img = output1.cpu().detach().numpy()
-    print(output2.size())
-    print(torch.max(output2))
-
-    numpy_img = np.resize(numpy_img,(600,600))
+#     numpy_pixels = dicom_img.pixel_array
+#     img = np.resize(numpy_pixels,(600,600))
+#     img = np.array(img,dtype="float32")
 
 
-    image = Image.fromarray(numpy_img,'L')
-    image.show()
+
+#     tensor = torch.from_numpy(img)
+#     tensor = tensor.float()
+#     tensor = torch.reshape(tensor,[1,1,600,600])
+#     #tensor = torch.view_as_real(tensor)
+
+
+    
+#     print(output2.size())
+#     print(torch.max(output2))
+#     print(torch.argmax(output2))
+
