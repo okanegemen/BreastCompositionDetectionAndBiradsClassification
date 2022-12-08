@@ -4,7 +4,6 @@ from ConnectedSegnet.connectedSegnet_model import ConSegnetsModel
 import config
 import math
 import sys
-from utils import MetricLogger,SmoothedValue, reduce_dict
 from torch.nn import BCEWithLogitsLoss
 from torch.optim import Adam
 from torch.utils.data import DataLoader
@@ -14,9 +13,11 @@ import torch
 import time
 import torchvision
 
+
+
 def get_model(load_last = False):
     if load_last == False:
-        return ConSegnetsModel().to(config.DEVICE)
+        return ConSegnetsModel(3,6).to(config.DEVICE)
     else:
         return torch.load(config.MODEL_PATH) # load previous weights
 
@@ -38,6 +39,7 @@ def get_dataloaders(trainDS,testDS):
     testLoader = DataLoader(testDS, shuffle=False,
         batch_size=config.BATCH_SIZE, pin_memory=config.PIN_MEMORY,
         num_workers=1)
+
     return trainLoader, testLoader
 
 def get_others(unet, trainDS, testDS):
@@ -50,17 +52,10 @@ def get_others(unet, trainDS, testDS):
 
     return lossFunc,opt,trainSteps,testSteps
 
-def concat_to_list(images,targets):
-    imgs = [t for t in images]
-    keys = targets.keys()
-    targ = [{"mask":mask} for mask in targets["masks"]]
-
-    return imgs,targ
-
 def func(x):
     return x
 
-def training(model, trainLoader, lossFunc, optimizer, testLoader, trainSteps, testSteps, H, scaler=None):
+def training(model, trainLoader, lossFunc, optimizer, valLoader, trainSteps, valSteps, H, scaler=None):
 
     # loop over epochs
     print("[INFO] training the network...")
@@ -69,59 +64,62 @@ def training(model, trainLoader, lossFunc, optimizer, testLoader, trainSteps, te
         # set the model in training mode
         model.train()
 
-        metric_logger_train = MetricLogger(delimiter="  ")
-        metric_logger_train.add_meter("lr", SmoothedValue(window_size=1, fmt="{value:.10f}"))
-        header = f"Epoch: [{epoch}]"
-
         lr_scheduler = None
-        if epoch == 0:
-            warmup_factor = 1.0 / 1000
-            warmup_iters = min(1000, len(trainLoader) - 1)
+        # if epoch == 0:
+        #     warmup_factor = 1.0 / 1000
+        #     warmup_iters = min(1000, len(trainLoader) - 1)
 
-            lr_scheduler = torch.optim.lr_scheduler.LinearLR(
-                optimizer, start_factor=warmup_factor, total_iters=warmup_iters
-            )        
+        #     lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        #         optimizer,mode="min",
+        #     )        
+
         # loop over the training set
-        for images,targets in metric_logger_train.log_every(trainLoader,10,header):
+
+        train_loss = 0
+        train_acc = 0.
+        train_count = 0
+        len_trainLoader = len(trainLoader)
+        for idx_t,traindata in enumerate(trainLoader):
+            images,targets = traindata
             # send the input to the device
             images = torch.stack([image.to(config.DEVICE) for image in images])
-            targets = torch.stack([v.to(config.DEVICE) for v in targets]).squeeze(0)
+            targets = torch.stack([v.to(config.DEVICE) for v in targets]).float()
 
             with torch.cuda.amp.autocast(enabled=scaler is not None):
                 outputs = model(images)
-                loss_dict = lossFunc(outputs,targets)
-                losses = loss_dict
+                loss_train = lossFunc(outputs,targets)
 
-            # reduce losses over all GPUs for logging purposes
-            loss_dict_reduced = {"masks":reduce_dict(loss_dict)}
+            
+            train_count += 1
 
-            losses_reduced = losses
+            train_loss += torch.mean(loss_train)
+            temp_loss = train_loss / train_count
 
-            loss_value = losses
+            train_acc += 1*config.BATCH_SIZE if torch.argmax(outputs)==torch.argmax(targets) else 0
+            temp_acc = train_acc/train_count
 
-            if not math.isfinite(loss_value):
-                print(f"Loss is {loss_value}, stopping training")
-                print(loss_dict_reduced)
+            if not math.isfinite(loss_train):
+                print(f"Loss is {loss_train}, stopping training")
+                print(temp_acc)
                 sys.exit(1)
 
 
             optimizer.zero_grad()
             if scaler is not None:
-                scaler.scale(losses).backward()
+                scaler.scale(loss_train).backward()
                 scaler.step(optimizer)
                 scaler.update()
             else:
-                losses.backward()
+                loss_train.backward()
                 optimizer.step()
 
             if lr_scheduler is not None:
                 lr_scheduler.step()
+        
+            if idx_t % config.PRINT_FREQ == 0 and idx_t != 0:
+                print(f"Epoch: [{epoch}]  [{idx_t}/{len_trainLoader}]  lr: {optimizer.param_groups[0]['lr']}  train_loss: {temp_loss:.4f}  train_acc:{temp_acc:.4f}")
 
-            metric_logger_train.update(loss=losses_reduced, **loss_dict_reduced)
-            metric_logger_train.update(lr=optimizer.param_groups[0]["lr"])
-
-            params = metric_logger_train.__dict__()
-            
+        print(f"Epoch: [{epoch}]  [{idx_t}/{len_trainLoader}]  lr: {optimizer.param_groups[0]['lr']}  train_loss: {temp_loss:.4f}  train_acc:{temp_acc:.4f}")
         # switch off autograd
         with torch.no_grad():
 
@@ -130,29 +128,40 @@ def training(model, trainLoader, lossFunc, optimizer, testLoader, trainSteps, te
             cpu_device = torch.device("cpu")
             model.eval()
             # loop over the validation set
-            metric_logger_test = MetricLogger(delimiter="  ")
-            header = "Test:"   
 
-            for imgs, targets in metric_logger_test.log_every(testLoader, 10, header):
+            val_acc = 0.
+            val_loss = 0
+            val_counter = 0
+            len_valLoader = len(valLoader)
+            for idx_v, valData in enumerate(valLoader):
+                imgs, targets = valData
                 # send the input to the device
                 images = torch.stack([img.to(config.DEVICE) for img in imgs])
+                targets = torch.stack([target.to(config.DEVICE) for target in targets]).float()
                 if torch.cuda.is_available():
                     torch.cuda.synchronize()
                 model_time = time.time()
                 outputs = model(images)
+                val_loss = lossFunc(outputs,targets)
                 outputs = torch.stack([v.to(cpu_device) for v in outputs]).squeeze(0)
                 model_time = time.time() - model_time
 
-                losses = lossFunc(outputs,targets)
+                targets = targets.squeeze(0).float().to(cpu_device)
+                loss_val = lossFunc(outputs,targets)
+
+                val_counter += 1
+                val_loss += torch.mean(loss_val)
+                temp_loss = val_loss/val_counter
+
+                val_acc += 1 if torch.argmax(outputs)==torch.argmax(targets) else 0
+                temp_acc = val_acc/val_counter
 
                 evaluator_time = time.time()
                 evaluator_time = time.time() - evaluator_time
-                metric_logger_test.update(model_time=model_time, evaluator_time=evaluator_time)
+                if idx_v % config.PRINT_FREQ == 0 and idx_v != 0:
+                    print(f"Val: [{idx_v}/{len_valLoader}]  val_loss: {temp_loss:.4f}  val_acc:{temp_acc:.4f}")
 
-        # gather the stats from all processes
-        metric_logger_test.synchronize_between_processes()
-        print("Averaged stats:", metric_logger_test)
-
+            print(f"Val: [{idx_v}/{len_valLoader}]  val_loss: {temp_loss:.4f}  val_acc:{temp_acc:.4f}")
         # accumulate predictions from all images
         torch.set_num_threads(n_threads)
     return H
@@ -189,20 +198,20 @@ def base():
     print(f"[INFO] found {len(trainDS)} examples in the training set...")
     print(f"[INFO] found {len(testDS)} examples in the test set...")
 
-    trainLoader, testLoader = get_dataloaders(trainDS, testDS)
+    trainLoader, valLoader = get_dataloaders(trainDS, testDS)
 
-    unet = get_model()
+    model = get_model()
 
-    lossFunc, opt, trainSteps, testSteps = get_others(unet, trainDS, testDS)
+    lossFunc, opt, trainSteps, valSteps = get_others(model, trainDS, testDS)
 
     H = {"train_loss": [], "test_loss": []}
 
 
-    H = training(unet,trainLoader,lossFunc,opt,testLoader,trainSteps,testSteps,H)
+    H = training(model,trainLoader,lossFunc,opt,valLoader,trainSteps,valSteps,H)
 
     plot(H)
 
-    torch.save(unet, config.MODEL_PATH)
+    torch.save(model, config.MODEL_PATH)
 
 
 if __name__ == "__main__":

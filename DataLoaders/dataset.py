@@ -1,10 +1,10 @@
+from .XLS_utils import XLS 
 import torch
 import pandas as pd
 from torchvision import datasets
 import os
 from PIL import Image
 import torchvision.transforms.functional as TF
-from XLS_utils import XLS 
 
 
 class Dataset(datasets.VisionDataset):
@@ -15,7 +15,7 @@ class Dataset(datasets.VisionDataset):
         self.imgs_name = {img.split("/")[-1].split("_")[0]:img for img in os.listdir(imgs_dir)}
 
     def loadImg(self,filename):
-        image = Image.open(os.path.join(self.imgs_dir,filename)).resize((512,512))
+        image = Image.open(os.path.join(self.imgs_dir,filename)).resize((256,256))
         image = TF.to_tensor(image).float()
         return image
 
@@ -24,19 +24,20 @@ class Dataset(datasets.VisionDataset):
         dicti = data.to_dict()
         image = self.loadImg(self.imgs_name[dicti["File Name"]])
 
-        laterality = torch.tensor(self.laterality_to_int(dicti["Laterality"]))
-        view = torch.tensor(self.view_to_int(dicti["View"]))
-        acr = torch.tensor(dicti["ACR"] if isinstance(dicti["ACR"],int) else 0)
+        # laterality = torch.tensor(self.laterality_to_int(dicti["Laterality"]))
+        # view = torch.tensor(self.view_to_int(dicti["View"]))
+        # acr = torch.tensor(dicti["ACR"] if isinstance(dicti["ACR"],int) else 0)
         bi_rads = torch.tensor(self.bi_rads_to_int(dicti["Bi-Rads"]))
 
-        target = {
-            "Laterality": laterality,
-            "View": view,
-            "ACR": acr,
-            "Bi-Rads":bi_rads 
-        }
+        bi_rads = torch.nn.functional.one_hot(bi_rads-1, num_classes=6)
+        # target = {
+        #     "Laterality": laterality,
+        #     "View": view,
+        #     "ACR": acr,
+        #     "Bi-Rads":bi_rads 
+        # }
 
-        return  image,target
+        return  image,bi_rads
 
     @staticmethod
     def bi_rads_to_int(a):
@@ -58,6 +59,9 @@ class Dataset(datasets.VisionDataset):
             return 0
         elif a == "R":
             return 1
+        
+    def __len__(self) -> int:
+        return len(self.dataset)
 
     def __str__(self):
         return str(self.dataset)

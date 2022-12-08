@@ -3,7 +3,7 @@ import errno
 import os
 import time
 from collections import defaultdict, deque
-
+import config
 import torch
 import torch.distributed as dist
 
@@ -13,7 +13,7 @@ class SmoothedValue:
     window or the global series average.
     """
 
-    def __init__(self, window_size=20, fmt=None):
+    def __init__(self, window_size=0, fmt=None):
         if fmt is None:
             fmt = "{median:.4f} ({global_avg:.4f})"
         self.deque = deque(maxlen=window_size)
@@ -151,7 +151,7 @@ class MetricLogger:
     def add_meter(self, name, meter):
         self.meters[name] = meter
 
-    def log_every(self, iterable, print_freq, header=None):
+    def log_every(self, iterable, header=None):
         i = 0
         if not header:
             header = ""
@@ -181,7 +181,7 @@ class MetricLogger:
             data_time.update(time.time() - end)
             yield obj
             iter_time.update(time.time() - end)
-            if True: # if i % print_freq == 0 or i == len(iterable) - 1:
+            if i % config.PRINT_FREQ == 0  and i != 0:
                 eta_seconds = iter_time.global_avg * (len(iterable) - i)
                 eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))
                 if torch.cuda.is_available():
