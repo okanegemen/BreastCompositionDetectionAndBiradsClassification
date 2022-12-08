@@ -1,7 +1,8 @@
 Pytorch_model/
 sample/
 INbreast Release 1.0/
-results/
+results_models/
+output/
 .DS_Store
 .python-version
 .vscode

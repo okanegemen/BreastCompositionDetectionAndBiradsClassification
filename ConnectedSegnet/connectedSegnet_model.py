@@ -1,4 +1,4 @@
-from connectedSegnet_elements import *
+from .connectedSegnet_elements import *
 import torch
 import torch.nn as nn
 import torch.functional as F
@@ -49,19 +49,12 @@ class ConSegnetsModel(nn.Module):
         self.secondDecoder4 = DoubleConv(128,64)
         self.secondDecoder5 = DoubleConv(64,64)
         self.outconv=nn.Conv2d(64,1,kernel_size=1)
-        self.avg = nn.AdaptiveAvgPool2d((20,20))
-        # self.fc1 = nn.Linear(64,32)
-        # self.fc2 = nn.Linear(32,16)
-        # self.fc3 = nn.Linear(16,n_classes)
+        self.avg = nn.AdaptiveAvgPool2d((10,10))
+        self.fc1 = nn.Linear(64*100,1024)
+        self.fc2 = nn.Linear(1024,1024)
+        self.fc3 = nn.Linear(1024,n_classes)
         
        
-        
-        
-   
-       
-
-
-        
         
         self.dilation = dilationConv(64,64)
         self.conv1x1 = conv1x1(in_channels=64,out_channels=1)
@@ -160,8 +153,9 @@ class ConSegnetsModel(nn.Module):
         sec_dec_out5 = unmaxpooling(sec_dec_out4,maxpool_indices=indices_sec_1,dim=dec_d5)
         sec_dec_out5=self.secondDecoder5(sec_dec_out5)
         sec_dec_d5 = sec_dec_out5.size()
-        dilation_out= self.dilation(sec_dec_out5)
-        out1 = self.conv1x1(dilation_out)
+
+        # dilation_out= self.dilation(sec_dec_out5)
+        # out1 = self.conv1x1(dilation_out)
 
         sec_dec_out5 = self.avg(sec_dec_out5)
         sec_dec_out5 = sec_dec_out5.view(sec_dec_out5.size(0),-1)
