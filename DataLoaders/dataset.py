@@ -1,34 +1,23 @@
-import matplotlib.pyplot as plt
-import pydicom
-import pydicom.data
-from XML_utils import XML_files
-from torch import nn
 import torch
-import numpy as np
 import pandas as pd
-import cv2
 from torchvision import datasets
 import os
-import random
-import math
 from PIL import Image
 import torchvision.transforms.functional as TF
+from XLS_utils import XLS 
 
 
-
-class DICOM_Dataset(datasets.VisionDataset):
-    def __init__(self,dataset: pd.DataFrame,imgs_dir:str,threshold=2):
-        super().__init__()
+class Dataset(datasets.VisionDataset):
+    def __init__(self,dataset: pd.DataFrame,imgs_dir:str):
+        super().__init__(imgs_dir)
         self.dataset = dataset
-        self.threshold = threshold
+        self.imgs_dir = imgs_dir
         self.imgs_name = {img.split("/")[-1].split("_")[0]:img for img in os.listdir(imgs_dir)}
 
-
     def loadImg(self,filename):
-        img_path = self.imgs_name[filename]
-        image = Image.open(img_path)
-        x = TF.to_tensor(image)
-        return x
+        image = Image.open(os.path.join(self.imgs_dir,filename)).resize((512,512))
+        image = TF.to_tensor(image).float()
+        return image
 
     def __getitem__(self, index: int):
         data = self.dataset.iloc[index,:]
@@ -74,5 +63,12 @@ class DICOM_Dataset(datasets.VisionDataset):
         return str(self.dataset)
 
 if __name__=="__main__":
-    path = "/home/alican/Documents/AnkAI/"
-    
+    path = "/home/alican/Documents/AnkAI/yoloV5/INbreast Release 1.0"
+    train,test = XLS(path).return_datasets()
+
+    imgs_dir = "/home/alican/Documents/AnkAI/yoloV5/INbreast Release 1.0/images"
+
+    train = Dataset(train,imgs_dir)
+    test = Dataset(test,imgs_dir)
+
+    print(next(iter(train)))

@@ -1,55 +1,35 @@
-from dataset import SegmentationDataset
-from model import UNet
+from DataLoaders.dataset import Dataset
+from DataLoaders.XLS_utils import XLS
+from ConnectedSegnet.connectedSegnet_model import ConSegnetsModel
 import config
 import math
 import sys
-from vision.coco_eval import CocoEvaluator
-from vision.coco_utils import get_coco_api_from_dataset
-from vision.utils import MetricLogger,SmoothedValue, reduce_dict
+from utils import MetricLogger,SmoothedValue, reduce_dict
 from torch.nn import BCEWithLogitsLoss
 from torch.optim import Adam
 from torch.utils.data import DataLoader
-from sklearn.model_selection import train_test_split
 from torchvision import transforms
-from imutils import paths
-from tqdm import tqdm
 import matplotlib.pyplot as plt
 import torch
 import time
-import os
 import torchvision
-def get_model(load_last = True):
+
+def get_model(load_last = False):
     if load_last == False:
-        return UNet().to(config.DEVICE)
+        return ConSegnetsModel().to(config.DEVICE)
     else:
         return torch.load(config.MODEL_PATH) # load previous weights
 
 def get_dataset():
-    imagePaths = sorted(list(paths.list_images(config.IMAGE_DATASET_PATH)))
-    maskPaths = sorted(list(paths.list_images(config.MASK_DATASET_PATH)))
+    path = "/home/alican/Documents/AnkAI/yoloV5/INbreast Release 1.0"
+    train,test = XLS(path).return_datasets()
 
-    split = train_test_split(imagePaths, maskPaths,
-        test_size=config.TEST_SPLIT, random_state=42)
+    imgs_dir = "/home/alican/Documents/AnkAI/yoloV5/INbreast Release 1.0/images"
 
-    (trainImages, testImages) = split[:2]
-    (trainMasks, testMasks) = split[2:]
+    train = Dataset(train,imgs_dir)
+    test = Dataset(test,imgs_dir)
 
-    print("[INFO] saving testing image paths...")
-    f = open(config.TEST_PATHS, "w")
-    f.write("\n".join(testImages))
-    f.close()
-
-    transform = transforms.Compose([transforms.ToPILImage(),
-        transforms.Resize((config.INPUT_IMAGE_HEIGHT,
-            config.INPUT_IMAGE_WIDTH)),
-        transforms.ToTensor()])
-
-    trainDS = SegmentationDataset(imagePaths=trainImages, maskPaths=trainMasks,
-        transforms=transform)
-    testDS = SegmentationDataset(imagePaths=testImages, maskPaths=testMasks,
-        transforms=transform)
-
-    return trainDS, testDS
+    return train, test
 
 def get_dataloaders(trainDS,testDS):
     trainLoader = DataLoader(trainDS, shuffle=True,

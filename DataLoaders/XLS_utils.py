@@ -26,7 +26,7 @@ class XLS():
     def open_xls(root,xls_filename,row_end):
         xls = pd.ExcelFile(os.path.join(root,xls_filename))
         sheetX = xls.parse(0).iloc[:row_end,:]
-        sheetX["File Name"] = sheetX["File Name"].apply(lambda x:int(x))
+        sheetX["File Name"] = sheetX["File Name"].apply(lambda x:str(int(x)))
         return sheetX
     
     @staticmethod
