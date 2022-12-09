@@ -13,7 +13,7 @@ class DownSampling(nn.Module):
 
     def __init__(self,inplanes,planes,stride):
         super(DownSampling,self).__init__()
-        self.conv1x1 = conv1x1(inplanes,planes,kernel_size=1,stride = stride)
+        self.conv1x1 = conv1x1(inplanes,planes,stride = stride)
 
         self.bn = nn.BatchNorm2d(planes)
     def forward(self,x):
@@ -29,8 +29,8 @@ class DownSampling(nn.Module):
 
 class BasicBlock(nn.Module):
 
-    def __init__(self,in_channels,out_channels,kernel_size=3,stride=1,padding=0,groups=1,bias=False,activation=True):
-        super().__init__(BasicBlock,self)
+    def __init__(self,in_channels,out_channels,kernel_size=3,stride=1,padding=0,bias=False,activation=True,groups=1):
+        super(BasicBlock,self).__init__()
 
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -39,7 +39,8 @@ class BasicBlock(nn.Module):
                     out_channels=out_channels,
                     kernel_size=kernel_size,
                     stride=stride,
-                    padding=padding,groups=groups,
+                    padding=padding,
+                    groups = groups,
                     bias=bias
         )
         self.bn = nn.BatchNorm2d(out_channels)
@@ -64,9 +65,9 @@ class SENet(nn.Module):
 
         self.squezee = nn.AdaptiveAvgPool2d(1)
 
-        self.excitation = nn.Sequential(nn.Conv2d(in_channels=inplanes,out_channels=inplanes*Rs,kernel_size=1),
+        self.excitation = nn.Sequential(nn.Conv2d(in_channels=inplanes,out_channels=int(inplanes*Rs),kernel_size=1),
                                         nn.SiLU(inplace=True),
-                                        nn.Conv2d(in_channels=inplanes*Rs,out_channels= inplanes,kernel_size=1),
+                                        nn.Conv2d(in_channels=int(inplanes*Rs),out_channels=inplanes,kernel_size=1),
                                         nn.Sigmoid()
         )
 
@@ -85,6 +86,7 @@ class MBConvN(nn.Module):
 
         padding = (kernel_size-1)/2
         expanded = expansion*inplanes
+        print(expanded)
 
         self.expanded_block = nn.Identity() if (expansion==1) else BasicBlock(inplanes,expanded,kernel_size=1)
 
@@ -94,7 +96,7 @@ class MBConvN(nn.Module):
 
         self.reduce_pw = BasicBlock(in_channels=expanded,out_channels=outplanes,kernel_size=1,activation=False)
         
-        self.dropsample = None if (stride==1) and (self.inpanes==expanded) else DownSampling(inplanes=inplanes,planes=expanded,stride=stride)
+        self.dropsample = None if (stride==1) and (inplanes==expanded) else DownSampling(inplanes=inplanes,planes=expanded,stride=stride)
 
     def forward(x,self):
 
@@ -104,9 +106,15 @@ class MBConvN(nn.Module):
         out = self.SENet(out)
         out = self.reduce_pw(out)
         if self.dropsample is not None:
-            out = self.dropsample(identity)
+            identity = self.dropsample(identity)
+            return (out+identity)
         
-        return out+identity
+        return out
+
+
+
+
+
 
 
 

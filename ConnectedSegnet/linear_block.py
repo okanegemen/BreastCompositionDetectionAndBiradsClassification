@@ -39,11 +39,10 @@ model = make_layer(model,fc)
 
 print(model.parameters)
 
-a = nn.Identity()
 
-b = [[[[10,20,30],[40,50,60]]]]
 
-print(a(b))
+
+
         
 
         
