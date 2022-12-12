@@ -60,9 +60,9 @@ class BasicBlock(nn.Module):
 
 class SENet(nn.Module):
 
-    def __init__(self,inplanes,Rs=0.25):
+    def __init__(self,inplanes,expansion=1):
         super(SENet,self).__init__()
-
+        Rs = expansion*0.25
         self.squezee = nn.AdaptiveAvgPool2d(1)
 
         self.excitation = nn.Sequential(nn.Conv2d(in_channels=inplanes,out_channels=int(inplanes*Rs),kernel_size=1),
@@ -92,7 +92,7 @@ class MBConvN(nn.Module):
 
         self.depthwise =  BasicBlock(expanded,expanded,kernel_size=kernel_size,stride=stride,padding=padding,groups=expanded)
 
-        self.SENet = SENet(inplanes=expanded,Rs=Rs)
+        self.SENet = SENet(inplanes=expanded,expansion=expansion)
 
         self.reduce_pw = BasicBlock(in_channels=expanded,out_channels=outplanes,kernel_size=1,activation=False)
         
@@ -113,7 +113,28 @@ class MBConvN(nn.Module):
 
 
 
+def scale_width(w, w_factor):
+  """Scales width given a scale factor"""
+  w *= w_factor
+  new_w = (int(w+4) // 8) * 8
+  new_w = max(8, new_w)
+  if new_w < 0.9*w:
+     new_w += 8
+  return int(new_w)
 
+
+base_widths = [(32, 16), (16, 24), (24, 40),
+               (40, 80), (80, 112), (112, 192),
+               (192, 320), (320, 1280)]
+base_depths = [1, 2, 2, 3, 3, 4, 1]
+
+
+scaled_widths = [(scale_width(w[0], 1), scale_width(w[1], 1)) 
+                 for w in base_widths]
+scaled_depths = [math.ceil(1*d) for d in base_depths]
+
+print(scaled_widths[0][0])
+print(scaled_depths)
 
 
 

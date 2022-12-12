@@ -11,11 +11,13 @@ class FullyConnected(nn.Module):
 
         self.fc1 = nn.Linear(in_features=in_features,out_features=out_features)
         self.fc2 = nn.Linear(in_features=out_features,out_features=n_classes)
+        self.softmax = nn.Softmax(n_classes)
 
 
     def forward(self,x):
         out = self.fc1(x)
         out = self.fc2(out)
+        out = self.softmax(out)
 
         return out
 
