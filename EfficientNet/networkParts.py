@@ -6,13 +6,15 @@ import math
 
 def conv1x1(in_planes,out_planes,stride=1):
     
-    return nn.Conv2d(in_planes,out_planes,kernel_size = 1, stride = stride,bias = False)
+    return nn.Conv2d(in_planes, out_planes, kernel_size = 1, stride = stride,bias = False)
 
 
 class DownSampling(nn.Module):
 
-    def __init__(self,inplanes,planes,stride):
-        super(DownSampling,self).__init__()
+    def __init__(self, inplanes,planes,stride):
+        super(DownSampling, self).__init__()
+
+        print(inplanes)
         self.conv1x1 = conv1x1(inplanes,planes,stride = stride)
 
         self.bn = nn.BatchNorm2d(planes)
@@ -44,10 +46,11 @@ class BasicBlock(nn.Module):
                     bias=bias
         )
         self.bn = nn.BatchNorm2d(out_channels)
+        print(self.bn.parameters)
 
         self.act = nn.SiLU(inplace=True) if activation else nn.Identity()
 
-
+    
     def forward(self,x):
         out = self.conv(x)
         out = self.bn(out)
@@ -62,7 +65,7 @@ class SENet(nn.Module):
 
     def __init__(self,inplanes,expansion=1):
         super(SENet,self).__init__()
-        Rs = expansion*0.25
+        Rs = 0.25/expansion
         self.squezee = nn.AdaptiveAvgPool2d(1)
 
         self.excitation = nn.Sequential(nn.Conv2d(in_channels=inplanes,out_channels=int(inplanes*Rs),kernel_size=1),
@@ -81,14 +84,13 @@ class SENet(nn.Module):
 
 class MBConvN(nn.Module):
 
-    def __init__(self,inplanes,outplanes,expansion=1,kernel_size=3,stride=1,Rs=0.25):
+    def __init__(self,inplanes,outplanes,expansion=1,kernel_size=3,stride=1):
         super(MBConvN,self).__init__()
 
-        padding = (kernel_size-1)/2
-        expanded = expansion*inplanes
-        print(expanded)
+        padding = int((kernel_size-1)/2)
+        expanded = int(expansion*inplanes)
 
-        self.expanded_block = nn.Identity() if (expansion==1) else BasicBlock(inplanes,expanded,kernel_size=1)
+        self.expanded_block = None if (expansion==1) else BasicBlock(inplanes,expanded,kernel_size=1)
 
         self.depthwise =  BasicBlock(expanded,expanded,kernel_size=kernel_size,stride=stride,padding=padding,groups=expanded)
 
@@ -96,13 +98,15 @@ class MBConvN(nn.Module):
 
         self.reduce_pw = BasicBlock(in_channels=expanded,out_channels=outplanes,kernel_size=1,activation=False)
         
-        self.dropsample = None if (stride==1) and (inplanes==expanded) else DownSampling(inplanes=inplanes,planes=expanded,stride=stride)
+        self.dropsample = None if (stride==1) and (inplanes==outplanes) else DownSampling(inplanes=inplanes,planes=outplanes,stride=stride)
+        
 
-    def forward(x,self):
+    def forward(self, x):
 
         identity = x
-        out = self.expanded_block(x)
-        out = self.depthwise(out)
+        if self.expanded_block is not None:
+            x = self.expanded_block(x)
+        out = self.depthwise(x)
         out = self.SENet(out)
         out = self.reduce_pw(out)
         if self.dropsample is not None:
@@ -114,7 +118,6 @@ class MBConvN(nn.Module):
 
 
 def scale_width(w, w_factor):
-  """Scales width given a scale factor"""
   w *= w_factor
   new_w = (int(w+4) // 8) * 8
   new_w = max(8, new_w)
@@ -123,18 +126,6 @@ def scale_width(w, w_factor):
   return int(new_w)
 
 
-base_widths = [(32, 16), (16, 24), (24, 40),
-               (40, 80), (80, 112), (112, 192),
-               (192, 320), (320, 1280)]
-base_depths = [1, 2, 2, 3, 3, 4, 1]
-
-
-scaled_widths = [(scale_width(w[0], 1), scale_width(w[1], 1)) 
-                 for w in base_widths]
-scaled_depths = [math.ceil(1*d) for d in base_depths]
-
-print(scaled_widths[0][0])
-print(scaled_depths)
 
 
 
