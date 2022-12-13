@@ -99,41 +99,41 @@ class EfficientModel(nn.Module):
 
         return out
 
+#YOU CAN TRY WİTH INPUT WHICH IS GIVEN IMAGE
 
-
-EfficientB0 = EfficientModel(3,1,1)
-EfficientB0.eval() #Batch Normalization is not w
-
-
-
-from PIL import Image
-import cv2 as cv
-import numpy as np
-import pydicom as dicom 
-
-path = "/Users/okanegemen/yoloV5/INbreast Release 1.0/AllDICOMs/20586908_6c613a14b80a8591_MG_R_CC_ANON.dcm"
-
-dicom_img = dicom.dcmread(path)
-
-numpy_pixels = dicom_img.pixel_array
-img = np.resize(numpy_pixels,(600,600))
-img = np.array(img,dtype="float32")
+# EfficientB0 = EfficientModel(3,1,1)
+# EfficientB0.eval() #Batch Normalization is not w
 
 
 
-tensor = torch.from_numpy(img)
-tensor = tensor.float()
-tensor = torch.reshape(tensor,[1, 1, 600, 600])
+# from PIL import Image
+# import cv2 as cv
+# import numpy as np
+# import pydicom as dicom 
+
+# path = "/Users/okanegemen/yoloV5/INbreast Release 1.0/AllDICOMs/20586908_6c613a14b80a8591_MG_R_CC_ANON.dcm"
+
+# dicom_img = dicom.dcmread(path)
+
+# numpy_pixels = dicom_img.pixel_array
+# img = np.resize(numpy_pixels,(600,600))
+# img = np.array(img,dtype="float32")
 
 
 
-print(EfficientB0.named_parameters)
+# tensor = torch.from_numpy(img)
+# tensor = tensor.float()
+# tensor = torch.reshape(tensor,[1, 1, 600, 600])
 
 
 
-out = EfficientB0(tensor)
+# print(EfficientB0.named_parameters)
 
-print(out)
+
+
+# out = EfficientB0(tensor)
+
+# print(out)
 
 
 
