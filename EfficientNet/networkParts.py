@@ -14,7 +14,6 @@ class DownSampling(nn.Module):
     def __init__(self, inplanes,planes,stride):
         super(DownSampling, self).__init__()
 
-        print(inplanes)
         self.conv1x1 = conv1x1(inplanes,planes,stride = stride)
 
         self.bn = nn.BatchNorm2d(planes)
@@ -46,7 +45,6 @@ class BasicBlock(nn.Module):
                     bias=bias
         )
         self.bn = nn.BatchNorm2d(out_channels)
-        print(self.bn.parameters)
 
         self.act = nn.SiLU(inplace=True) if activation else nn.Identity()
 

@@ -101,37 +101,55 @@ class EfficientModel(nn.Module):
 
 #YOU CAN TRY WİTH INPUT WHICH IS GIVEN IMAGE
 
-# EfficientB0 = EfficientModel(3,1,1)
-# EfficientB0.eval() #Batch Normalization is not w
+
+
+w_factor = [1, 1 , 1.1 , 1.2 , 1.4 , 1.6 , 1.8 , 2]
+num_classes = 3
+d_factor = [1 , 1.1 , 1.2 , 1.4 , 1.8 , 2.2 , 2.6 , 3.4]
+
+
+models = []
+
+
+for i in range(8):
+
+    model = EfficientModel(num_classes,w_factor=w_factor[i],d_factor=d_factor[i])
+    models.append(model)
+
+
+from PIL import Image
+import cv2 as cv
+import numpy as np
+import pydicom as dicom 
+
+path = "/Users/okanegemen/yoloV5/INbreast Release 1.0/AllDICOMs/20586908_6c613a14b80a8591_MG_R_CC_ANON.dcm"
+
+dicom_img = dicom.dcmread(path)
+
+numpy_pixels = dicom_img.pixel_array
+img = np.resize(numpy_pixels,(600,600))
+img = np.array(img,dtype="float32")
 
 
 
-# from PIL import Image
-# import cv2 as cv
-# import numpy as np
-# import pydicom as dicom 
-
-# path = "/Users/okanegemen/yoloV5/INbreast Release 1.0/AllDICOMs/20586908_6c613a14b80a8591_MG_R_CC_ANON.dcm"
-
-# dicom_img = dicom.dcmread(path)
-
-# numpy_pixels = dicom_img.pixel_array
-# img = np.resize(numpy_pixels,(600,600))
-# img = np.array(img,dtype="float32")
+tensor = torch.from_numpy(img)
+tensor = tensor.float()
+tensor = torch.reshape(tensor,[1, 1, 600, 600])
 
 
+model_num = int(input("PLEASE ENTER NUMBER FROM 0 TO 7 TO TRY EFFICIENT NET BLOCKES : "))
 
-# tensor = torch.from_numpy(img)
-# tensor = tensor.float()
-# tensor = torch.reshape(tensor,[1, 1, 600, 600])
+model = models[model_num]
+
+model.eval()
+
+out = model(tensor)
+
+print("FOR EFFICIENTB{} PREDİCTİON VALUES IS : {} ".format(model_num,out))
 
 
 
-# print(EfficientB0.named_parameters)
 
-
-
-# out = EfficientB0(tensor)
 
 # print(out)
 
