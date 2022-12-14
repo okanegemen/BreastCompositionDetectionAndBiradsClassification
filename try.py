@@ -1,5 +1,5 @@
-from tqdm import tqdm
+a = "1234\n"
+text_file = open("/home/alican/Documents/AnkAI/yoloV5/output/history.txt","a")
+text_file.write(a)
+text_file.close()
 
-a = 0 
-for i in tqdm(range(100000000)):
-    a += i
