@@ -49,11 +49,13 @@ class ConSegnetsModel(nn.Module):
         self.secondDecoder4 = DoubleConv(128,64)
         self.secondDecoder5 = DoubleConv(64,64)
         self.outconv=nn.Conv2d(64,1,kernel_size=1)
-        self.avg = nn.AdaptiveAvgPool2d((10,10))
-        self.fc1 = nn.Linear(64*100,1024)
-        self.fc2 = nn.Linear(1024,1024)
-        self.fc3 = nn.Linear(1024,n_classes)
-        
+        self.avg = nn.AdaptiveAvgPool2d((1,1))
+        self.fc1 = nn.Linear(64,32)
+        self.relu1 = nn.ReLU(True)
+        self.fc2 = nn.Linear(32,16)
+        self.relu2 = nn.ReLU(True)
+        self.fc3 = nn.Linear(16,n_classes)
+        self.soft_max = nn.LogSoftmax(dim=1)
        
         
         self.dilation = dilationConv(64,64)
@@ -159,14 +161,13 @@ class ConSegnetsModel(nn.Module):
 
         sec_dec_out5 = self.avg(sec_dec_out5)
         sec_dec_out5 = sec_dec_out5.view(sec_dec_out5.size(0),-1)
+        
         out2 = self.fc1(sec_dec_out5)
+        out2 = self.relu1(out2)
         out2 = self.fc2(out2)
+        out2 = self.relu2(out2)
         out2 = self.fc3(out2)
-        
-        
-
-
-
+        out2 = self.soft_max(out2)
 
         return out2
 

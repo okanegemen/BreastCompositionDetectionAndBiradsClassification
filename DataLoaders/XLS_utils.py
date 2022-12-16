@@ -2,42 +2,102 @@ import os
 import pandas as pd
 import random
 
+if __name__ == "__main__":
+    import config
+else:
+    import DataLoaders.config as config
+
+# importing
 class XLS():
-    def __init__(self,root,train_split=0.8,xls_name = "INbreast.xls"):
-        self.root = root
-        self.train_split = train_split
-        self.xls_name = xls_name
+    def __init__(self):
 
-        self.xls = self.open_xls(self.root,xls_filename=self.xls_name,row_end=410)
+        self.Dataset_name = config.DATASET_NAME
 
-        self.df = self.eliminate_columns_of_df(self.xls)
+        if self.Dataset_name not in config.DATASET_NAMES:
+            raise ValueError(f"Invalid dataset name. Expected one of: {config.DATASET_NAME}")
 
-    def return_datasets(self):
+        if self.Dataset_name == "INBreast":
+            self.df = self.INBreast()
+
+        elif self.Dataset_name == "VinDr":
+            self.df = self.VinDr_mammo()
+
+    def get_all_info(self):
+        train_set, test_set = self.return_datasets()
+        image_dir = self.return_images_dir()
+        data_type = self.return_data_type()
+
+        return train_set, test_set, image_dir
+
+    def return_datasets(self, test_split = config.TEST_SPLIT):
+
         self.idxs = [*range(len(self.df))]
         random.shuffle(self.idxs)
-        self.split = int(self.train_split*len(self.idxs))
-        self.train_idxs = self.idxs[:self.split]
-        self.test_idxs = self.idxs[self.split:]
-        train = self.df[self.df.index.isin(self.train_idxs)].sample(frac = 1).reset_index(drop=True)
-        test = self.df[self.df.index.isin(self.test_idxs)].sample(frac = 1).reset_index(drop=True)
-        return train,test
+        self.split = int(test_split*len(self.idxs))
 
-    @staticmethod
-    def open_xls(root,xls_filename,row_end):
-        xls = pd.ExcelFile(os.path.join(root,xls_filename))
-        sheetX = xls.parse(0).iloc[:row_end,:]
-        sheetX["File Name"] = sheetX["File Name"].apply(lambda x:str(int(x)))
-        return sheetX
+        self.train_idxs = self.idxs[self.split:]
+        self.test_idxs = self.idxs[:self.split]
+
+        remain_set = self.df[self.df.index.isin(self.train_idxs)].sample(frac = 1).reset_index(drop=True)
+        test = self.df[self.df.index.isin(self.test_idxs)].sample(frac = 1).reset_index(drop=True)
+
+        return remain_set, test
+
+    def return_images_dir(self):
+        if self.Dataset_name == "INBreast":
+            return os.path.join(self.root,"AllDICOMs")
+        elif self.Dataset_name == "VinDr":
+            return os.path.join(self.root,"Dicom_images")
     
-    @staticmethod
-    def eliminate_columns_of_df(df):
+    def return_data_type(self):
+        if self.Dataset_name == "INBreast":
+            return "dcm"
+        
+        elif self.Dataset_name == "VinDr":
+            return "png"
+
+
+    def VinDr_mammo(self):
+        self.root = "/home/alican/Documents/Datasets/VinDr-mammo/"
+        info_filename = "breast-level_annotations.csv"
+
+        df = pd.read_csv(self.root+info_filename)
+
+        df["ACR"] = df["breast_density"].apply(lambda x: list(x)[-1]).replace(["A","B","C","D"],[1,2,3,4])
+        df['Bi-Rads'] = df['breast_birads'].apply(lambda x: int(list(x)[-1]))
+        df["File Name"] = df[['study_id', 'image_id']].agg('/'.join, axis=1)
+
+        df.rename(columns={"view_position":"View","laterality":"Laterality"},inplace=True)
+
+        eliminated_columns_names = ["series_id","split","height","width","breast_birads","breast_density","image_id","study_id"]
+        df = df.drop(eliminated_columns_names, axis=1)
+
+        return df
+
+    def INBreast(self,row_end=410):
+        self.root = "/home/alican/Documents/Datasets/INBreast"
+        info_filename = "INbreast.xls"
+
+        xls = pd.ExcelFile(os.path.join(self.root,info_filename))
+        df = xls.parse(0).iloc[:row_end,:]
+
+        df["File Name"] = df["File Name"].apply(lambda x:str(int(x)))
+        df['Bi-Rads'] = df['Bi-Rads'].replace(['4a', '4b', '4c'], 4)
+
+        if config.CONVERT_BI_RADS:
+            df['Bi-Rads'] = df['Bi-Rads'].replace([3,4, 5], [2,3,3])
+            df = df[df["Bi-Rads"]!= 6]
+
+        if config.ONLY_CC:
+            df = df[df["View"] == "CC"]
+
         eliminated_columns_names = ["Patient ID","Patient age","Other Notes","Other Annotations","Acquisition date","Pectoral Muscle Annotation","Asymmetry","Distortion","Micros","Mass ","Findings Notes (in Portuguese)","Lesion Annotation Status"]
         df = df.drop(eliminated_columns_names, axis=1)
+
         return df
 
 if __name__ == "__main__":
-    root = "/home/alican/Documents/AnkAI/yoloV5/INbreast Release 1.0"
-    train,test = XLS(root).return_datasets()
+    train,test = XLS().return_datasets()
 
-    print(train.keys())
+    print(train["File Name"][0])
     print(test)
