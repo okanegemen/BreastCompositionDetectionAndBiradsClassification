@@ -1,6 +1,11 @@
 import torch
 import os
 
+class EFFICIENT_NET():
+    w_factor = 2 # [1, 1 , 1.1 , 1.2 , 1.4 , 1.6 , 1.8 , 2]
+    d_factor = 3.1 # [1 , 1.1 , 1.2 , 1.4 , 1.8 , 2.2 , 2.6 , 3.4]
+
+    
 DATASET_NAME = "VinDr"
 DATASET_NAMES = ["INBreast","VinDr"] # available datasets
 
@@ -33,20 +38,20 @@ NUM_LEVELS = 1
 
 INIT_LR = 0.00001
 NUM_EPOCHS = 18
-BATCH_SIZE = 5
+BATCH_SIZE = 3
 
 SAVE_MODEL_PER_EPOCH = 1
 VALIDATE_PER_EPOCH = 1
 
-INPUT_IMAGE_WIDTH = 200 # yatay
-INPUT_IMAGE_HEIGHT = 400 # dikey
+INPUT_IMAGE_WIDTH = 300 # yatay
+INPUT_IMAGE_HEIGHT = 450 # dikey
 
 THRESHOLD = 0.5
 PRINT_FREQ = None
 
 BASE_OUTPUT = "output"
 
-LOAD_NEW_MODEL = False
+LOAD_NEW_MODEL = True
 MODEL_PATH = os.path.join(BASE_OUTPUT,"unet_tgs_salt.pth")
 PLOT_ACC_PATH = os.path.sep.join([BASE_OUTPUT,"plot_acc.png"])
 PLOT_LOSS_PATH = os.path.sep.join([BASE_OUTPUT,"plot_loss.png"])
