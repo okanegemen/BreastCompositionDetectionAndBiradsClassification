@@ -6,7 +6,7 @@ class EFFICIENT_NET():
     d_factor = 3.1 # [1 , 1.1 , 1.2 , 1.4 , 1.8 , 2.2 , 2.6 , 3.4]
 
     
-DATASET_NAME = "VinDr"
+DATASET_NAME = "INBreast"
 DATASET_NAMES = ["INBreast","VinDr"] # available datasets
 
 DATASET_PATH = os.path.join("dataset","train")
