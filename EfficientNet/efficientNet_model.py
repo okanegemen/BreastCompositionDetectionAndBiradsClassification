@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn 
-from .networkParts import *
-from .linear_block import *
+from networkParts import *
+from linear_block import *
 
 
 
@@ -24,7 +24,7 @@ class MBConv6(MBConvN):
 
 
 class EfficientModel(nn.Module):
-    def __init__(self,class_num,w_factor=1,d_factor=1.):
+    def __init__(self,class_num,in_channels,w_factor=1,d_factor=1.):
         super(EfficientModel,self).__init__()
 
 
@@ -43,7 +43,7 @@ class EfficientModel(nn.Module):
         kernel_sizes = [3, 3, 5, 3, 5, 5, 3]
 
         strides = [1, 2, 2, 2, 1, 2, 1]
-        self.stem = BasicBlock(in_channels=1,out_channels=scaled_widths[0][0],kernel_size=3,stride=2,padding=1)
+        self.stem = BasicBlock(in_channels=in_channels,out_channels=scaled_widths[0][0],kernel_size=3,stride=2,padding=1)
 
         blockes = []
 
@@ -92,8 +92,10 @@ class EfficientModel(nn.Module):
         out = self.pre_head(out)
 
         out = self.avg(out)
+        out = self.dropout(out)
 
         out = out.view(out.size(0),-1)
+
 
         out = self.linear(out)
 
@@ -101,57 +103,59 @@ class EfficientModel(nn.Module):
 
 #YOU CAN TRY WİTH INPUT WHICH IS GIVEN IMAGE
 
-if __name__ == "__main__ ":
+# if __name__ == "__main__ ":
 
-    w_factor = [1, 1 , 1.1 , 1.2 , 1.4 , 1.6 , 1.8 , 2]
-    num_classes = 3
-    d_factor = [1 , 1.1 , 1.2 , 1.4 , 1.8 , 2.2 , 2.6 , 3.4]
-
-
-    models = []
+w_factor = [1, 1 , 1.1 , 1.2 , 1.4 , 1.6 , 1.8 , 2]
+num_classes = 3
+d_factor = [1 , 1.1 , 1.2 , 1.4 , 1.8 , 2.2 , 2.6 , 3.1]
 
 
-    for i in range(8):
-
-        model = EfficientModel(num_classes,w_factor=w_factor[i],d_factor=d_factor[i])
-        models.append(model)
+models = []
 
 
-    from PIL import Image
-    import cv2 as cv
-    import numpy as np
-    import pydicom as dicom 
+for i in range(8):
 
-    path = "/Users/okanegemen/yoloV5/INbreast Release 1.0/AllDICOMs/20586908_6c613a14b80a8591_MG_R_CC_ANON.dcm"
-
-    dicom_img = dicom.dcmread(path)
-
-    numpy_pixels = dicom_img.pixel_array
-    img = np.resize(numpy_pixels,(600,600))
-    img = np.array(img,dtype="float32")
+    model = EfficientModel(num_classes,1,w_factor=w_factor[i],d_factor=d_factor[i])
+    models.append(model)
 
 
+from PIL import Image
+import cv2 as cv
+import numpy as np
+import pydicom as dicom 
 
-    tensor = torch.from_numpy(img)
-    tensor = tensor.float()
-    tensor = torch.reshape(tensor,[1, 1, 600, 600])
+path = "/Users/okanegemen/yoloV5/INbreast Release 1.0/AllDICOMs/20586908_6c613a14b80a8591_MG_R_CC_ANON.dcm"
 
+dicom_img = dicom.dcmread(path)
 
-    model_num = int(input("PLEASE ENTER NUMBER FROM 0 TO 7 TO TRY EFFICIENT NET BLOCKES : "))
-
-    model = models[model_num]
-
-    model.eval()
-
-    out = model(tensor)
-
-    print("FOR EFFICIENTB{} PREDİCTİON VALUES IS : {} ".format(model_num,out))
+numpy_pixels = dicom_img.pixel_array
+img = np.resize(numpy_pixels,(600,600))
+img = np.array(img,dtype="float32")
 
 
 
+tensor = torch.from_numpy(img)
+tensor = tensor.float()
+tensor = torch.reshape(tensor,[1, 1, 600, 600])
 
 
-    # print(out)
+model_num = int(input("PLEASE ENTER NUMBER FROM 0 TO 7 TO TRY EFFICIENT NET BLOCKES : "))
+
+model = models[model_num]
+
+model.eval()
+
+out = model(tensor)
+
+print("FOR EFFICIENTB{} PREDİCTİON VALUES IS : {} ".format(model_num,out))
+
+print(model.parameters)
+
+
+
+
+
+# print(out)
 
 
 

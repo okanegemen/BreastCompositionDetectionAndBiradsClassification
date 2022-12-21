@@ -9,13 +9,11 @@ from torch.utils.data import DataLoader,Dataset
 
 import matplotlib.pyplot as plt
 import os
-from efficientNet_model import *
-from networkParts import *
-from linear_block import *
 from torch.optim import Adam
 from torchvision import transforms
 
-from torch.nn import CrossEntropyLoss
+
+
 
 
 
@@ -27,14 +25,14 @@ from torch.nn import CrossEntropyLoss
 
 from DataLoaders.dataset import Dataset
 from DataLoaders.XLS_utils import XLS
-from Pytorch_model.unet import UNet as load_model
+from trying import EfficientNet as load_model
 # from ConnectedSegnet.connectedSegnet_model import ConSegnetsModel as load_model
 import configToMac as config
 import math
 import sys
 import os
 from torch.nn import CrossEntropyLoss as Loss
-from torch.optim import Adam
+from torch.optim import RMSprop
 from torch.utils.data import DataLoader
 from torchvision import transforms
 import matplotlib.pyplot as plt
@@ -47,7 +45,7 @@ def collate_fn(batch):
 
 def get_model():
     if config.LOAD_NEW_MODEL:
-        model = load_model(config.NUM_CHANNELS,config.NUM_CLASSES).to(config.DEVICE)
+        model = load_model(w_factor=2,d_factor=3.1,out_sz=config.NUM_CLASSES).to(config.DEVICE)
         print("Random Weighted Model loaded.")
         return model
     else:
@@ -75,7 +73,7 @@ def get_dataloaders(trainDS,testDS):
 def get_others(model):
 
     lossFunc = Loss()
-    opt = Adam(model.parameters(), lr=config.INIT_LR)
+    opt = RMSprop(model.parameters(), lr=config.INIT_LR)
 
     return lossFunc,opt
 
@@ -95,13 +93,17 @@ def plot(H):
     plt.savefig(config.PLOT_LOSS_PATH)
 
 
-def training(model, trainLoader, lossFunc, optimizer, valLoader, H):
 
+
+
+def training(model, trainLoader, lossFunc, optimizer, valLoader, H):
+    count = 0
     # loop over epochs
+    model.train()
     print("[INFO] training the network...")
     for epoch in range(config.NUM_EPOCHS):
         # set the model in training mode
-        model.train()
+        
 
         lr_scheduler = None
         # if epoch == 0:
@@ -119,31 +121,37 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader, H):
         train_count = 0
         for idx_t,traindata in enumerate(pbar:=tqdm(trainLoader,ncols=100)):
             images,targets = traindata
+
+
+
             # send the input to the device
             # images = torch.stack([image.to(config.DEVICE) for image in images])
             # targets = torch.stack([v.to(config.DEVICE) for v in targets]).float()
-            images, targets = torch.stack(images).to(config.DEVICE), torch.stack(targets).view(-1).to(config.DEVICE)
-            
+            images, targets = torch.stack(images).to(config.DEVICE), torch.stack(targets).view(-1).to(config.DEVICE)            
             optimizer.zero_grad()
-            
-            
             outputs = model(images)
+            print(outputs)
+            
             loss_train = lossFunc(outputs,targets)
-        
             train_count += 1
             train_loss += loss_train.item()
             temp_loss = train_loss / train_count
             train_acc += 1*(torch.argmax(outputs,dim=1)==targets).sum().item()
             temp_acc = train_acc/(train_count*config.BATCH_SIZE)
 
+            
+            
+            loss_train.backward()
+            
+
+            # torch.nn.utils.clip_grad_norm_(model.parameters(),25)
             if not math.isfinite(loss_train):
                 print(f"Loss is {loss_train}, stopping training")
                 print(temp_acc)
                 sys.exit(1)
-
-
-            loss_train.backward()
             optimizer.step()
+        
+            
 
             pbar.set_description(f"Epoch:[{epoch+1}] lr: {optimizer.param_groups[0]['lr']:.7f}  train_loss: {temp_loss:.4f}  train_acc:{temp_acc:.4f}")
             
@@ -170,8 +178,6 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader, H):
 
                     # send the input to the device
                     images, targets = torch.stack(images).to(config.DEVICE), torch.stack(targets).view(-1).to(config.DEVICE)
-                    if torch.cuda.is_available():
-                        torch.cuda.synchronize()
                     outputs = model(images)
                     loss_val = lossFunc(outputs,targets)
 
