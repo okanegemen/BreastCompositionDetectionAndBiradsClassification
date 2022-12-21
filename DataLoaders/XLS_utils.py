@@ -49,9 +49,8 @@ class XLS():
             return os.path.join(self.root,"Dicom_images")
 
     def VinDr_mammo(self):
-
-        self.root = "/Users/okanegemen/yoloV5/INbreast Release 1.0/"
-        info_filename = "INbreast.csv"
+        self.root = "/home/alican/Documents/Datasets/VinDr-mammo/"
+        info_filename = "breast-level_annotations.csv"
 
         df = pd.read_csv(self.root+info_filename)
 
