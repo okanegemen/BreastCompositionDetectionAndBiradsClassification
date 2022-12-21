@@ -13,7 +13,7 @@ DATASET_PATH = os.path.join("dataset","train")
 
 IMAGE_DATASET_PATH = os.path.join(DATASET_PATH,"images")
 MASK_DATASET_PATH = os.path.join(DATASET_PATH,"masks")
-HISTORY_PATH =  "/home/alican/Documents/AnkAI/yoloV5/output/history.txt"
+HISTORY_PATH =  "/Users/okanegemen/yoloV5/output/history.txt"
 
 MINIMIZE_IMAGE = True
 ONLY_CC = False
@@ -27,7 +27,7 @@ TRAIN_SPLIT = 0.80
 TEST_SPLIT = 0.12
 VAL_SPLIT = 0.8
 
-DEVICE = "mps" if torch.cuda.is_available() else "cpu"
+DEVICE = "mps" if torch.backends.mps.is_available() else "cpu"
 print(DEVICE)
 
 PIN_MEMORY = True if DEVICE == "mps" else False
@@ -41,7 +41,7 @@ NUM_EPOCHS = 18
 BATCH_SIZE = 3
 
 SAVE_MODEL_PER_EPOCH = 1
-VALIDATE_PER_EPOCH = 1
+VALIDATE_PER_EPOCH = 200
 
 INPUT_IMAGE_WIDTH = 300 # yatay
 INPUT_IMAGE_HEIGHT = 450 # dikey
@@ -52,7 +52,7 @@ PRINT_FREQ = None
 BASE_OUTPUT = "output"
 
 LOAD_NEW_MODEL = True
-MODEL_PATH = os.path.join(BASE_OUTPUT,"unet_tgs_salt.pth")
+MODEL_PATH = os.path.join(BASE_OUTPUT,"efficientNetB7.pth")
 PLOT_ACC_PATH = os.path.sep.join([BASE_OUTPUT,"plot_acc.png"])
 PLOT_LOSS_PATH = os.path.sep.join([BASE_OUTPUT,"plot_loss.png"])
 PLOT_TEST = os.path.sep.join([BASE_OUTPUT,"plot_test.png"])
