@@ -25,7 +25,7 @@ def get_model():
         return model
     else:
         model = load_model(config.NUM_CHANNELS,config.NUM_CLASSES).to(config.DEVICE)
-        model.load_state_dict(torch.load(config.MODEL_PATH))
+        model.load_state_dict(torch.load(os.path.join(config.LOAD_MODEL_DIR,"model.pth")))
         print("############# Previous weights loaded. ###################")
         return model
 
@@ -55,8 +55,6 @@ def get_others(model):
 def plot(H):
     train_epochs = [*range(len(H["train_loss"]))]
     val_epochs = [epoch for epoch in train_epochs if epoch%config.VALIDATE_PER_EPOCH==0]
-    print(train_epochs,val_epochs)
-    print(H)
 
     plt.plot(train_epochs,H["train_acc"])
     plt.plot(val_epochs,H["val_acc"])
@@ -90,7 +88,7 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader, H):
         train_loss = 0
         train_acc = 0
         train_count = 0
-        for idx_t,traindata in enumerate(pbar:=tqdm(trainLoader,ncols=100)):
+        for idx_t,traindata in enumerate(pbar:=tqdm(trainLoader,ncols=130)):
             images,targets = traindata
             # send the input to the device
             # images = torch.stack([image.to(config.DEVICE) for image in images])
@@ -138,7 +136,7 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader, H):
             # switch off autograd
             
             with torch.no_grad():
-                for idx_v, valData in enumerate(pbar:=tqdm(valLoader,ncols=80)):
+                for idx_v, valData in enumerate(pbar:=tqdm(valLoader,ncols=110)):
                     images, targets = valData
 
                     # send the input to the device
@@ -159,7 +157,9 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader, H):
 
                 H["val_acc"].append(temp_acc)
                 H["val_loss"].append(temp_loss)
-
+        else:
+                H["val_acc"].append("-")
+                H["val_loss"].append("-")
         if (epoch % config.SAVE_MODEL_PER_EPOCH == 0 and (epoch != 0 or config.VALIDATE_PER_EPOCH == 1)) or epoch == config.NUM_EPOCHS-1:
             print("Saving Model State Dict...")
             torch.save(model.state_dict(), config.MODEL_PATH)
