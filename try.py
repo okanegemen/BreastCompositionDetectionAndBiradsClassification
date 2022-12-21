@@ -1,15 +1,36 @@
-import pydicom
 from PIL import Image
-import numpy as np
+from torchvision import transforms as T
+import os
+import shutil
 
-path = "/home/alican/Downloads"
-name = "f0e2bba9e9409b3532ca57e92676878d.dicom"
+path = "/home/alican/Documents/Datasets/VinDr-mammo"
+f = "Dicom_images"
 
-name = pydicom.data.data_manager.get_files(path, name)[0]
+transform = T.ToTensor()
 
-ds = pydicom.dcmread(name)
+folders = os.listdir(os.path.join(path,f))
+for folder in folders:
+    files = os.listdir(os.path.join(path,f,folder))
+    image = Image.open(os.path.join(path,f,folder,files[0]))
+    while True:
+        try:
+            value = transform(image).mean()
+            if value < 0.105:
+                res = "Y"
+            elif value >0.155:
+                res = "N"
+            else:
+                image.show()
+                print(value)
+                res = str(input())
+            
 
-ds = np.round((ds.pixel_array/4095)*255)
-image = Image.fromarray(ds.astype(np.uint8))
-
-image.save(name.split(".")[0]+".png")
+            if res.capitalize() == "Y":
+                shutil.move(os.path.join(path,f,folder),os.path.join(path,"Temiz",folder))
+            elif res.capitalize() == "N":
+                shutil.move(os.path.join(path,f,folder),os.path.join(path,"Kirli",folder))
+            else:
+                raise Exception("Incorrect input")
+        except:
+            continue
+        break

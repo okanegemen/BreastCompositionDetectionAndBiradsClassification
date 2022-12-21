@@ -25,7 +25,6 @@ class XLS():
     def get_all_info(self):
         train_set, test_set = self.return_datasets()
         image_dir = self.return_images_dir()
-        data_type = self.return_data_type()
 
         return train_set, test_set, image_dir
 
@@ -48,19 +47,10 @@ class XLS():
             return os.path.join(self.root,"AllDICOMs")
         elif self.Dataset_name == "VinDr":
             return os.path.join(self.root,"Dicom_images")
-    
-    def return_data_type(self):
-        if self.Dataset_name == "INBreast":
-            return "dcm"
-        
-        elif self.Dataset_name == "VinDr":
-            return "png"
-
 
     def VinDr_mammo(self):
-
-        self.root = "/Users/okanegemen/yoloV5/INbreast Release 1.0/"
-        info_filename = "INbreast.csv"
+        self.root = "/home/alican/Documents/Datasets/VinDr-mammo/"
+        info_filename = "breast-level_annotations.csv"
 
         df = pd.read_csv(self.root+info_filename)
 
