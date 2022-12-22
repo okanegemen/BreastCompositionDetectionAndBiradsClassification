@@ -173,7 +173,5 @@ def base():
 
     training(model,trainLoader,lossFunc,opt,valLoader)
 
-    plot(H)
-
 if __name__ == "__main__":
     base()
