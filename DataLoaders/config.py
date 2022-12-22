@@ -9,6 +9,8 @@ class EFFICIENT_NET():
     
 DATASET_NAME = "VinDr"
 DATASET_NAMES = ["INBreast","VinDr"] # available datasets
+VINDR_DIR = "/home/alican/Documents/Datasets/VinDr-mammo/"
+INBREAST_DIR = "/home/alican/Documents/Datasets/INBreast"
 
 DATASET_PATH = os.path.join("dataset","train")
 
@@ -25,8 +27,8 @@ CONVERT_BI_RADS = False # Eğer True ise 3 -> 2, 4 ->3, 5->3 olur. birads 6 sili
 EQUALIZE = False # true enables histogram equalization
 AUTO_CONTRAST = False # true enables contrast func
 
-TRAIN_SPLIT = 0.80
-TEST_SPLIT = 0.12
+TRAIN_SPLIT = 0.70
+TEST_SPLIT = 0.30
 VAL_SPLIT = 0.8
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -35,7 +37,7 @@ print(DEVICE)
 PIN_MEMORY = True if DEVICE == "cuda" else False
 
 NUM_CHANNELS = 1
-NUM_CLASSES = 6 if CONVERT_BI_RADS != True else 3
+NUM_CLASSES = 5 if DATASET_NAME=="VinDr" else 6
 NUM_LEVELS = 1
 
 INIT_LR = 0.0001
@@ -53,7 +55,7 @@ PRINT_FREQ = None
 
 BASE_OUTPUT = "output"
 
-LOAD_NEW_MODEL = False
+LOAD_NEW_MODEL = True
 LOAD_MODEL_DIR = "/home/alican/Documents/AnkAI/yoloV5/output"
 MODEL_PATH = os.path.join(BASE_OUTPUT,"model.pth")
 PLOT_ACC_PATH = os.path.sep.join([BASE_OUTPUT,"plot_acc.png"])

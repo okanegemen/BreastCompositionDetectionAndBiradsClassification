@@ -13,7 +13,8 @@ from torchvision import transforms
 import matplotlib.pyplot as plt
 import torch
 import time
-from tqdm import tqdm
+from qqdm import qqdm, format_str
+from DataLoaders.scores import scores
 
 def collate_fn(batch):
     return tuple(zip(*batch))
@@ -66,7 +67,8 @@ def plot(H):
     plt.savefig(config.PLOT_LOSS_PATH)
 
 
-def training(model, trainLoader, lossFunc, optimizer, valLoader, H):
+def training(model, trainLoader, lossFunc, optimizer, valLoader):
+    scores_train = scores()
 
     # loop over epochs
     print("[INFO] training the network...")
@@ -85,10 +87,8 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader, H):
 
         # loop over the training set
 
-        train_loss = 0
-        train_acc = 0
-        train_count = 0
-        for idx_t,traindata in enumerate(pbar:=tqdm(trainLoader,ncols=130)):
+        train_loss = []
+        for idx_t,traindata in enumerate(tw :=qqdm(trainLoader, desc=format_str('bold', 'Description'))):
             images,targets = traindata
             # send the input to the device
             # images = torch.stack([image.to(config.DEVICE) for image in images])
@@ -101,42 +101,39 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader, H):
                 outputs = model(images)
                 loss_train = lossFunc(outputs,targets)
             
-            train_count += 1
-            train_loss += loss_train.item()
-            temp_loss = train_loss / train_count
-            train_acc += 1*(torch.argmax(outputs,dim=1)==targets).sum().item()
-            temp_acc = train_acc/(train_count*config.BATCH_SIZE)
+
+            train_loss.append(loss_train.item())
+            temp_loss = sum(train_loss[-20:]) / min([len(train_loss),20])
 
             if not math.isfinite(loss_train):
                 print(f"Loss is {loss_train}, stopping training")
-                print(temp_acc)
                 sys.exit(1)
-
 
             loss_train.backward()
             optimizer.step()
 
-            pbar.set_description(f"Epoch:[{epoch+1}] lr: {optimizer.param_groups[0]['lr']:.7f}  train_loss: {temp_loss:.4f}  train_acc:{temp_acc:.4f}")
-            
+            scores_train.update(outputs,targets)
+            tw.set_infos({"Epoch":f"{epoch}",
+                            "lr": f"{optimizer.param_groups[0]['lr']:.5f}",
+                            "loss":"%.4f"%temp_loss,
+                            **scores_train.metrics()})
+
             if lr_scheduler is not None:
                 lr_scheduler.step()
         
-        H["train_acc"].append(temp_acc)
-        H["train_loss"].append(temp_loss)
         n_threads = torch.get_num_threads()
         
         if epoch % config.VALIDATE_PER_EPOCH == 0 and (epoch != 0 or config.VALIDATE_PER_EPOCH == 1):
+            scores_test = scores()
             # set the model in evaluation mode
             model.eval()
             # loop over the validation set
 
-            val_acc = 0
-            val_loss = 0
-            val_counter = 0
+            val_loss = []
+
             # switch off autograd
-            
             with torch.no_grad():
-                for idx_v, valData in enumerate(pbar:=tqdm(valLoader,ncols=110)):
+                for idx_v, valData in enumerate(tw :=qqdm(valLoader, desc=format_str('bold', 'Description'))):
                     images, targets = valData
 
                     # send the input to the device
@@ -146,32 +143,20 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader, H):
                     outputs = model(images)
                     loss_val = lossFunc(outputs,targets)
 
-                    val_counter += 1
-                    val_loss += loss_val.item()
-                    temp_loss = val_loss/val_counter
+                    val_loss.append(loss_val.item())
+                    temp_loss = sum(val_loss[-20:]) / min([len(val_loss),20])
 
-                    val_acc += 1*(torch.argmax(outputs)==targets).sum().item()
-                    temp_acc = val_acc/val_counter
 
-                    pbar.set_description(f"Val: val_loss: {temp_loss:.4f}  val_acc:{temp_acc:.4f}")
+                    scores_test.update(outputs,targets)
+                    tw.set_infos({"loss":"%.4f"%temp_loss,
+                                **scores_test.metrics()})
 
-                H["val_acc"].append(temp_acc)
-                H["val_loss"].append(temp_loss)
-        else:
-                H["val_acc"].append("-")
-                H["val_loss"].append("-")
         if (epoch % config.SAVE_MODEL_PER_EPOCH == 0 and (epoch != 0 or config.VALIDATE_PER_EPOCH == 1)) or epoch == config.NUM_EPOCHS-1:
             print("Saving Model State Dict...")
             torch.save(model.state_dict(), config.MODEL_PATH)
 
-        text_file = open(config.HISTORY_PATH,"a" if os.path.exists(config.HISTORY_PATH) else "x")
-        text_file.write(" ".join([str(values[-1]) for key,values in H.items()])+"\n")
-        text_file.close()
-
         # accumulate predictions from all images
         torch.set_num_threads(n_threads)
-
-    return H
 
 def base():
 
@@ -186,10 +171,7 @@ def base():
 
     lossFunc, opt= get_others(model)
 
-    H = {"train_loss": [], "val_loss": [],"train_acc":[],"val_acc":[]}
-
-
-    H = training(model,trainLoader,lossFunc,opt,valLoader,H)
+    training(model,trainLoader,lossFunc,opt,valLoader)
 
     plot(H)
 
