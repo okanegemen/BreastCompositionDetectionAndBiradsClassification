@@ -139,9 +139,9 @@ tensor = tensor.float()
 tensor = torch.reshape(tensor,[1, 1, 600, 600])
 
 
-model_num = int(input("PLEASE ENTER NUMBER FROM 0 TO 7 TO TRY EFFICIENT NET BLOCKES : "))
+# model_num = int(input("PLEASE ENTER NUMBER FROM 0 TO 7 TO TRY EFFICIENT NET BLOCKES : "))
 
-model = models[model_num]
+# model = models[model_num]
 
 model.eval()
 
