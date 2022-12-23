@@ -9,6 +9,8 @@ class EFFICIENT_NET():
     
 DATASET_NAME = "VinDr"
 DATASET_NAMES = ["INBreast","VinDr"] # available datasets
+VINDR_DIR = "/home/alican/Documents/Datasets/VinDr-mammo/"
+INBREAST_DIR = "/home/alican/Documents/Datasets/INBreast"
 
 DATASET_PATH = os.path.join("dataset","train")
 
@@ -27,6 +29,7 @@ AUTO_CONTRAST = False # true enables contrast func
 
 TRAIN_SPLIT = 0.70
 TEST_SPLIT = 0.30
+
 VAL_SPLIT = 0.15
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -35,7 +38,7 @@ print(DEVICE)
 PIN_MEMORY = True if DEVICE == "cuda" else False
 
 NUM_CHANNELS = 1
-NUM_CLASSES = 6 if CONVERT_BI_RADS != True else 3
+NUM_CLASSES = 5 if DATASET_NAME=="VinDr" else 6
 NUM_LEVELS = 1
 
 INIT_LR = 0.0001
@@ -56,6 +59,7 @@ BASE_OUTPUT = "output"
 LOAD_NEW_MODEL = False
 LOAD_MODEL_DIR = "/home/robotik/yoloV5/output"
 MODEL_PATH = os.path.join(BASE_OUTPUT,"model")
+
 PLOT_ACC_PATH = os.path.sep.join([BASE_OUTPUT,"plot_acc.png"])
 PLOT_LOSS_PATH = os.path.sep.join([BASE_OUTPUT,"plot_loss.png"])
 PLOT_TEST = os.path.sep.join([BASE_OUTPUT,"plot_test.png"])

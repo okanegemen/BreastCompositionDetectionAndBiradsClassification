@@ -49,7 +49,7 @@ class XLS():
             return os.path.join(self.root,"Dicom_images")
 
     def VinDr_mammo(self):
-        self.root = "/home/robotik/Documents/Datasets/VinDr-mammo/"
+        self.root = config.VINDR_DIR
         info_filename = "breast-level_annotations.csv"
 
         df = pd.read_csv(self.root+info_filename)
@@ -66,7 +66,7 @@ class XLS():
         return df
 
     def INBreast(self,row_end=410):
-        self.root = "/home/alican/Documents/Datasets/INBreast"
+        self.root = config.INBREAST_DIR
         info_filename = "INbreast.xls"
 
         xls = pd.ExcelFile(os.path.join(self.root,info_filename))
