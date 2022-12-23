@@ -12,6 +12,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 import matplotlib.pyplot as plt
 import torch
+import random
 import time
 from qqdm import qqdm, format_str
 from DataLoaders.scores import scores
@@ -33,8 +34,8 @@ def get_model():
 def get_dataset():
     train,test,imgs_dir = XLS().get_all_info()
 
-    train = Dataset(train,imgs_dir)
-    test = Dataset(test,imgs_dir)
+    train = Dataset(train,imgs_dir,True)
+    test = Dataset(test,imgs_dir,False)
 
     return train, test
 

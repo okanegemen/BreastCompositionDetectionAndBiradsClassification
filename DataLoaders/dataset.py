@@ -19,14 +19,35 @@ import torchvision.transforms as T
 import numpy as np
 import pydicom
 import scipy.ndimage as ndi
+import random
+
+def get_transforms(train=True):
+    if train:
+        transform = T.Compose([
+                            T.RandomHorizontalFlip(0.5),
+                            T.RandomRotation(7*random.random()),
+                            T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
+                            T.ToTensor(),
+                        ])
+    else:
+        transform = T.Compose([
+                            T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
+                            T.ToTensor(),
+                        ])
+    return transform
+
+# image = T.ToPILImage()(img)
+# image = image.resize((config.INPUT_IMAGE_WIDTH,config.INPUT_IMAGE_HEIGHT)) # width,height
+# image = TF.to_tensor(image).float()
 
 
 class Dataset(datasets.VisionDataset):
-    def __init__(self,dataset: pd.DataFrame,imgs_dir:str):
+    def __init__(self,dataset: pd.DataFrame,imgs_dir:str,train_transform=True):
         super().__init__(imgs_dir)
         self.dataset = dataset
         self.imgs_dir = imgs_dir
         self.dataset_name = config.DATASET_NAME
+        self.transform = get_transforms(train_transform)
 
         if self.dataset_name == "INBreast":
             self.imgs_name = self.INBreast()
@@ -47,19 +68,22 @@ class Dataset(datasets.VisionDataset):
         self.view = dicti["View"]+"_"+dicti["Laterality"]
         image = self.loadImg(self.imgs_name[dicti["File Name"]],self.view)
 
-        bi_rads = torch.tensor(dicti["Bi-Rads"]-1,dtype=torch.int64) # -1 to make classes 0,1,2,3,4,5 instead of 1,2,3,4,5,6
+        bi_rads = torch.tensor(dicti["Bi-Rads"]-1,dtype=torch.int64) # -1 to convert classes to 0,1,2,3,4,5 instead of 1,2,3,4,5,6
 
+        image = self.transform(image)
+        img = T.ToPILImage()(image)
         return  image,bi_rads
 
     def loadImg(self,filename,view):
         if self.dataset_name == "INBreast":
             array = self.dicom_open(filename=filename)
             image = Image.fromarray(array)
-
+        
         elif self.dataset_name == "VinDr":
             image = Image.open(os.path.join(self.imgs_dir,filename))
 
         image = ImageOps.grayscale(image)
+
         if config.EQUALIZE:
             image = ImageOps.equalize(image)
         
@@ -86,33 +110,40 @@ class Dataset(datasets.VisionDataset):
             if view == "MLO_L":
                 img = img[:,centerH-int(H*0.25):centerH+int(H*0.4),:centerW+int(W*0.3)]
                 _,Hx,Wx = img.size()
-                transform = T.Pad((0,0,int(Hx/1.75)-Wx,0))
+                transform = T.Compose([
+                    T.Pad((0,0,int(Hx/1.75)-Wx,0)),
+                    T.ToPILImage(),])
+
                 img = transform(img)
             elif view == "MLO_R":
                 img = img[:,centerH-int(H*0.25):centerH+int(H*0.4),centerW-distance_to_sideR -int(W*0.08):]
                 _,Hx,Wx = img.size()
-                transform = T.Pad((int(Hx/1.75)-Wx,0,0,0))
+                transform = T.Compose([
+                    T.Pad((int(Hx/1.75)-Wx,0,0,0)),
+                    T.ToPILImage(),])
                 img = transform(img)
             elif view == "CC_L":
                 img = img[:,centerH-int(H*0.3):centerH+int(H*0.3),:centerW+int(W*0.3)]
                 _,Hx,Wx = img.size()
-                transform = T.Pad((0,0,int(Hx/1.75)-Wx,0))
+                transform = T.Compose([
+                    T.Pad((0,0,int(Hx/1.75)-Wx,0)),
+                    T.ToPILImage(),])
+
                 img = transform(img)
             elif view == "CC_R":
                 img = img[:,centerH-int(H*0.3):centerH+int(H*0.3),centerW-distance_to_sideR-int(W*0.08):]
                 _,Hx,Wx = img.size()
-                transform = T.Pad((int(Hx/1.75)-Wx,0,0,0))
+                transform = T.Compose([ 
+                    T.Pad((int(Hx/1.75)-Wx,0,0,0)),
+                    T.ToPILImage(),])
+
                 img = transform(img)
             else:
                 raise Exception(f"{view} is not an available option for View!")
 
             # img = img[:,centerH-int(H*0.3):centerW+int(H*0.5),:]
-            image = T.ToPILImage()(img)
-        image = image.resize((config.INPUT_IMAGE_WIDTH,config.INPUT_IMAGE_HEIGHT)) # width,height
 
-        image = TF.to_tensor(image).float()
-
-        return image
+        return img
 
     def VinDr(self):
         dicom_paths = {}
