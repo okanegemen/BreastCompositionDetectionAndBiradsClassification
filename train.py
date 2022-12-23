@@ -1,6 +1,6 @@
 from DataLoaders.dataset import Dataset
 from DataLoaders.XLS_utils import XLS
-from Pytorch_model.unet import UNet as load_model
+from EfficientNet.trying import EfficientNet as load_model
 # from ConnectedSegnet.connectedSegnet_model import ConSegnetsModel as load_model
 import DataLoaders.config as config
 import math
@@ -20,11 +20,12 @@ def collate_fn(batch):
 
 def get_model():
     if config.LOAD_NEW_MODEL:
-        model = load_model(config.NUM_CHANNELS,config.NUM_CLASSES).to(config.DEVICE)
+        model = load_model(w_factor = 2,d_factor=3.1,out_sz = config.NUM_CLASSES).to(config.DEVICE)
+        # model = load_model(config.NUM_CHANNELS,config.NUM_cCLASSES).to(config.DEVICE)
         print("Random Weighted Model loaded.")
         return model
     else:
-        model = load_model(config.NUM_CHANNELS,config.NUM_CLASSES).to(config.DEVICE)
+        model = load_model(w_factor = 2,d_factor=3.1,out_sz = config.NUM_CLASSES).to(config.DEVICE)
         model.load_state_dict(torch.load(os.path.join(config.LOAD_MODEL_DIR,"model.pth")))
         print("############# Previous weights loaded. ###################")
         return model
@@ -88,7 +89,7 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader, H):
         train_loss = 0
         train_acc = 0
         train_count = 0
-        for idx_t,traindata in enumerate(pbar:=tqdm(trainLoader,ncols=130)):
+        for idx_t,traindata in enumerate(pbar:=tqdm(trainLoader,ncols=110)):
             images,targets = traindata
             # send the input to the device
             # images = torch.stack([image.to(config.DEVICE) for image in images])
@@ -116,7 +117,7 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader, H):
             loss_train.backward()
             optimizer.step()
 
-            pbar.set_description(f"Epoch:[{epoch+1}] lr: {optimizer.param_groups[0]['lr']:.7f}  train_loss: {temp_loss:.4f}  train_acc:{temp_acc:.4f}")
+            pbar.set_description(f"Epoch:[{epoch+1}] lr: {optimizer.param_groups[0]['lr']:.5f}  train_loss: {temp_loss:.4f}  train_acc:{temp_acc:.4f}")
             
             if lr_scheduler is not None:
                 lr_scheduler.step()
@@ -136,7 +137,7 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader, H):
             # switch off autograd
             
             with torch.no_grad():
-                for idx_v, valData in enumerate(pbar:=tqdm(valLoader,ncols=110)):
+                for idx_v, valData in enumerate(pbar:=tqdm(valLoader,ncols=90)):
                     images, targets = valData
 
                     # send the input to the device
@@ -162,7 +163,7 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader, H):
                 H["val_loss"].append("-")
         if (epoch % config.SAVE_MODEL_PER_EPOCH == 0 and (epoch != 0 or config.VALIDATE_PER_EPOCH == 1)) or epoch == config.NUM_EPOCHS-1:
             print("Saving Model State Dict...")
-            torch.save(model.state_dict(), config.MODEL_PATH)
+            torch.save(model.state_dict(), config.MODEL_PATH+str(epoch)+".pth")
 
         text_file = open(config.HISTORY_PATH,"a" if os.path.exists(config.HISTORY_PATH) else "x")
         text_file.write(" ".join([str(values[-1]) for key,values in H.items()])+"\n")

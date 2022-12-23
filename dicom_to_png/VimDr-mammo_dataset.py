@@ -57,6 +57,6 @@ class dicoms_to_png():
 if __name__=="__main__":
     root = "/home/alican/Documents/physionet.org/files/vindr-mammo/1.0.0/images"
 
-    imgs = DICOM_Dataset(root).dicom_open()
+    imgs = dicoms_to_png(root).dicom_open()
 
     print("finish")

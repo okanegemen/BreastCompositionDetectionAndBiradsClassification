@@ -1,7 +1,6 @@
 import torch
 from torch import nn
 import math
-import configToMac as config
 
 class ConvBnAct(nn.Module):
   """Layer grouping a convolution, batchnorm, and activation function"""
@@ -87,7 +86,7 @@ class DropSample(nn.Module):
     
     batch_size = len(x)
     random_tensor = torch.FloatTensor(batch_size, 1, 1, 1).uniform_()
-    bit_mask = self.p<random_tensor.to(config.DEVICE)
+    bit_mask = self.p<random_tensor.to("cuda" if torch.cuda.is_available() else "cpu")
 
     x = x.div(1-self.p)
     x = x * bit_mask

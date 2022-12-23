@@ -6,3 +6,5 @@ opencv-python
 xlrd
 Pillow
 pandas
+scipy
+tqdm

@@ -14,7 +14,7 @@ DATASET_PATH = os.path.join("dataset","train")
 
 IMAGE_DATASET_PATH = os.path.join(DATASET_PATH,"images")
 MASK_DATASET_PATH = os.path.join(DATASET_PATH,"masks")
-HISTORY_PATH =  "/home/alican/Documents/AnkAI/yoloV5/results_models/001/history.txt"
+HISTORY_PATH =  "/home/robotik/yoloV5/output/history.txt"
 
 MINIMIZE_IMAGE = True
 IGNORE_SIDE_PIXELS = 100 
@@ -25,9 +25,9 @@ CONVERT_BI_RADS = False # Eğer True ise 3 -> 2, 4 ->3, 5->3 olur. birads 6 sili
 EQUALIZE = False # true enables histogram equalization
 AUTO_CONTRAST = False # true enables contrast func
 
-TRAIN_SPLIT = 0.80
-TEST_SPLIT = 0.12
-VAL_SPLIT = 0.8
+TRAIN_SPLIT = 0.70
+TEST_SPLIT = 0.30
+VAL_SPLIT = 0.15
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(DEVICE)
@@ -39,7 +39,7 @@ NUM_CLASSES = 6 if CONVERT_BI_RADS != True else 3
 NUM_LEVELS = 1
 
 INIT_LR = 0.0001
-NUM_EPOCHS = 3
+NUM_EPOCHS = 100
 BATCH_SIZE = 3
 
 SAVE_MODEL_PER_EPOCH = 1
@@ -54,8 +54,8 @@ PRINT_FREQ = None
 BASE_OUTPUT = "output"
 
 LOAD_NEW_MODEL = False
-LOAD_MODEL_DIR = "/home/alican/Documents/AnkAI/yoloV5/output"
-MODEL_PATH = os.path.join(BASE_OUTPUT,"model.pth")
+LOAD_MODEL_DIR = "/home/robotik/yoloV5/output"
+MODEL_PATH = os.path.join(BASE_OUTPUT,"model")
 PLOT_ACC_PATH = os.path.sep.join([BASE_OUTPUT,"plot_acc.png"])
 PLOT_LOSS_PATH = os.path.sep.join([BASE_OUTPUT,"plot_loss.png"])
 PLOT_TEST = os.path.sep.join([BASE_OUTPUT,"plot_test.png"])
