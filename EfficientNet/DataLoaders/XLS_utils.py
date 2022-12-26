@@ -63,9 +63,6 @@ class XLS():
         eliminated_columns_names = ["series_id","split","height","width","breast_birads","breast_density","image_id","study_id"]
         df = df.drop(eliminated_columns_names, axis=1)
 
-        if config.CONVERT_BI_RADS:
-            df['Bi-Rads'] = df['Bi-Rads'].replace([3,4, 5], [2,3,3])
-
         return df
 
     def INBreast(self,row_end=410):

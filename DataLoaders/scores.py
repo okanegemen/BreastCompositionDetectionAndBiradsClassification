@@ -48,20 +48,19 @@ class scores: # TO DO
         "precision":"%.4f"%precision,
         "recall":"%.4f"%recall,
         "auroc":"%.4f"%auroc,
-        " "*150:" "*10,
-        "confusion matrix"+" "*87:confusion}
+        "confusion matrix":confusion}
 
         return metrics
 
     def confusion_str(self,cm) -> str:
-        confusion = "\n".join(["".join([f"{round_int(j):>4}" for j in i]) for i in cm.tolist()])
+        confusion = "\n".join(["".join([f"{round_int(j):>5}" for j in i]) for i in cm.tolist()])
         return confusion
 
 def round_int(x):
     try:
         if x in [float("-inf"),float("inf"),float("nan")]: return 0
         
-        return round(x,2)
+        return round(x,1)
     except:
         return 0.00
 if __name__ == "__main__":

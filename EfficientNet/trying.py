@@ -79,6 +79,7 @@ class DropSample(nn.Module):
     super().__init__()
 
     self.p = p
+    print(self.p)
   
   def forward(self, x):
     if (not self.p) or (not self.training):
@@ -146,7 +147,7 @@ class EfficientNet(nn.Module):
     kernel_sizes = [3, 3, 5, 3, 5, 5, 3]
     strides = [1, 2, 2, 2, 1, 2, 1]
     ps = [0, 0.029, 0.057, 0.086, 0.114, 0.143, 0.171]
-
+    
     self.stem = ConvBnAct(1, scaled_widths[0][0], stride=2, padding=1)
     
     stages = []
@@ -227,8 +228,44 @@ class EfficientNetB6(EfficientNet):
     
     
 class EfficientNetB7(EfficientNet):
-  def __init__(self, out_sz=1000):
+  def __init__(self, out_sz=6):
     w_factor = 2
     d_factor = 3.1
     super().__init__(w_factor, d_factor, out_sz)
+
+
+
+from PIL import Image
+import cv2 as cv
+import numpy as np
+import pydicom as dicom 
+
+path = "/Users/okanegemen/Desktop/yoloV5/INbreast Release 1.0/AllDICOMs/20586986_6c613a14b80a8591_MG_L_ML_ANON.dcm"
+
+dicom_img = dicom.dcmread(path)
+
+numpy_pixels = dicom_img.pixel_array
+img = np.resize(numpy_pixels,(600,600))
+img = np.array(img,dtype="float32")
+
+
+model = EfficientNetB7()
+tensor = torch.from_numpy(img)
+tensor = tensor.float()
+tensor = torch.reshape(tensor,[1, 1, 600, 600])
+
+
+# model_num = int(input("PLEASE ENTER NUMBER FROM 0 TO 7 TO TRY EFFICIENT NET BLOCKES : "))
+
+# model = models[model_num]
+
+model.eval()
+
+out = model(tensor)
+# print(model.parameters)
+
+
+
+
+
 

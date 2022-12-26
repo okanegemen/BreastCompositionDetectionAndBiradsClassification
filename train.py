@@ -1,6 +1,8 @@
 from DataLoaders.dataset import Dataset
 from DataLoaders.XLS_utils import XLS
-from EfficientNet.trying import EfficientNet as load_model
+from torchvision.models import ResNet50_Weights, resnet50 as load_model
+# from resnet50.resnet import ResNet50
+# from EfficientNet.trying import EfficientNet as load_model
 # from ConnectedSegnet.connectedSegnet_model import ConSegnetsModel as load_model
 import DataLoaders.config as config
 import math
@@ -15,19 +17,48 @@ import torch
 import time
 from qqdm import qqdm, format_str
 from DataLoaders.scores import scores
+import numpy 
 
 def collate_fn(batch):
     return tuple(zip(*batch))
 
 def get_model():
     if config.LOAD_NEW_MODEL:
-        model = load_model(w_factor = 2,d_factor=3.1,out_sz = config.NUM_CLASSES).to(config.DEVICE)
+        model = load_model(weights=ResNet50_Weights.IMAGENET1K_V2)
+
+        model.conv1 = torch.nn.Conv2d(1,64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+
+        for name, param in model.named_parameters():
+            if 'fc' not in name:
+                param.requires_grad=True
+
+ 
+        # net_conv1 = model.layers[2] # first 2D convolutional layer, from model.layers, or model.summary()
+        # # your new set of weights must have same dimensions of the ouput of the layer
+        # print( 'weights shape: ', numpy.shape(net_conv1.weights) )
+        # print( net_conv1.weights[0].shape )
+        # print( net_conv1.weights[1].shape )
+        # # New weights
+        # osh_0 = net_conv1.weights[0].shape.as_list()
+        # osh_1 = net_conv1.weights[1].shape.as_list()
+        # print(osh_0, osh_1)
+        # new_conv1_w_0 = numpy.random.rand( *osh_0 )
+        # new_conv1_w_1 = numpy.random.rand( *osh_1 )
+        # # update the weights
+        # net_conv1.set_weights([new_conv1_w_0, new_conv1_w_1])
+        # # check the result
+        # net_conv1.get_weights()
+        # # update the model
+        # model.layers[2] = net_conv1
+        model.fc = torch.nn.Linear(2048, config.NUM_CLASSES)
+
         # model = load_model(config.NUM_CHANNELS,config.NUM_cCLASSES).to(config.DEVICE)
+        model = model.to(config.DEVICE)
         print("Random Weighted Model loaded.")
         return model
     else:
         model = load_model(w_factor = 2,d_factor=3.1,out_sz = config.NUM_CLASSES).to(config.DEVICE)
-        model.load_state_dict(torch.load(os.path.join(config.LOAD_MODEL_DIR,"model.pth")))
+        model.load_state_dict(torch.load(os.path.join(config.LOAD_MODEL_DIR,"model9.pth")))
         print("############# Previous weights loaded. ###################")
         return model
 
