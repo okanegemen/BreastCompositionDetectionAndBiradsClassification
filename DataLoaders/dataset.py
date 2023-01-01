@@ -19,23 +19,49 @@ import torchvision.transforms as T
 import numpy as np
 import pydicom
 import scipy.ndimage as ndi
+import random
+import time
+
+def get_transforms(train=True):
+    if train:
+        transform = T.Compose([
+                            T.RandomHorizontalFlip(0.5),
+                            T.RandomRotation(7*random.random()),
+                            T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
+                            T.ToTensor(),
+                        ])
+    else:
+        transform = T.Compose([
+                            T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
+                            T.ToTensor(),
+                        ])
+    return transform
+
+# image = T.ToPILImage()(img)
+# image = image.resize((config.INPUT_IMAGE_WIDTH,config.INPUT_IMAGE_HEIGHT)) # width,height
+# image = TF.to_tensor(image).float()
 
 
 class Dataset(datasets.VisionDataset):
-    def __init__(self,dataset: pd.DataFrame,imgs_dir:str):
+    def __init__(self,dataset: pd.DataFrame,imgs_dir:str,train_transform=True):
         super().__init__(imgs_dir)
+        if train_transform:
+            print("Train data is preparing...")
+        else:
+            print("Test data is preparing...")
+
         self.dataset = dataset
         self.imgs_dir = imgs_dir
         self.dataset_name = config.DATASET_NAME
+        self.transform = get_transforms(train_transform)
 
-        if self.dataset_name == "INBreast":
-            self.imgs_name = self.INBreast()
-        elif self.dataset_name == "VinDr":
+        if self.dataset_name == "VinDr":
             self.imgs_name = self.VinDr()
             self.dataset = self.eliminate_unused_dicoms_VinDr(self.imgs_name,self.dataset) # eliminates rows in dataframe of dataset which are not in the image directory, deleted or moved
 
         categories = self.dataset["Bi-Rads"].to_list()
-        self.ids = [x-1 for x in list(categories)]
+        min_idx = min(list(categories))
+        self.ids = [x-min_idx for x in list(categories)]
         # category_ids = list(categories)
         class_weights = get_class_weights(self.ids)
         self.sampler = get_sampler(self.ids,class_weights)
@@ -47,19 +73,25 @@ class Dataset(datasets.VisionDataset):
         self.view = dicti["View"]+"_"+dicti["Laterality"]
         image = self.loadImg(self.imgs_name[dicti["File Name"]],self.view)
 
-        bi_rads = torch.tensor(dicti["Bi-Rads"]-1,dtype=torch.int64) # -1 to make classes 0,1,2,3,4,5 instead of 1,2,3,4,5,6
+        bi_rads = torch.tensor(dicti["Bi-Rads"],dtype=torch.int64)
 
+        image = self.transform(image)
+        # a = T.ToPILImage()(image)
+        # a.show()
+        # time.sleep(1)
         return  image,bi_rads
+    
 
     def loadImg(self,filename,view):
-        if self.dataset_name == "INBreast":
-            array = self.dicom_open(filename=filename)
-            image = Image.fromarray(array)
-
-        elif self.dataset_name == "VinDr":
+        if self.dataset_name == "VinDr":
             image = Image.open(os.path.join(self.imgs_dir,filename))
 
-        image = ImageOps.grayscale(image)
+        if config.NUM_CHANNELS == 1:
+            image = ImageOps.grayscale(image)
+
+        elif config.NUM_CHANNELS == 3:
+            image = image.convert('RGB')
+
         if config.EQUALIZE:
             image = ImageOps.equalize(image)
         
@@ -72,8 +104,7 @@ class Dataset(datasets.VisionDataset):
                         ])
                 
             img = transform(image)
-            if self.dataset_name == "VinDr":
-                img = img/255
+            img = img/255
             _,H,W = img.size()
 
             ignore = config.IGNORE_SIDE_PIXELS
@@ -86,33 +117,41 @@ class Dataset(datasets.VisionDataset):
             if view == "MLO_L":
                 img = img[:,centerH-int(H*0.25):centerH+int(H*0.4),:centerW+int(W*0.3)]
                 _,Hx,Wx = img.size()
-                transform = T.Pad((0,0,int(Hx/1.75)-Wx,0))
+                transform = T.Compose([
+                    T.Pad((0,0,int(Hx/1.75)-Wx,0)),
+                    T.ToPILImage(),])
                 img = transform(img)
+
             elif view == "MLO_R":
                 img = img[:,centerH-int(H*0.25):centerH+int(H*0.4),centerW-distance_to_sideR -int(W*0.08):]
                 _,Hx,Wx = img.size()
-                transform = T.Pad((int(Hx/1.75)-Wx,0,0,0))
+                transform = T.Compose([
+                    T.Pad((int(Hx/1.75)-Wx,0,0,0)),
+                    T.ToPILImage(),])
                 img = transform(img)
+
             elif view == "CC_L":
                 img = img[:,centerH-int(H*0.3):centerH+int(H*0.3),:centerW+int(W*0.3)]
                 _,Hx,Wx = img.size()
-                transform = T.Pad((0,0,int(Hx/1.75)-Wx,0))
+                transform = T.Compose([
+                    T.Pad((0,0,int(Hx/1.75)-Wx,0)),
+                    T.ToPILImage(),])
+
                 img = transform(img)
             elif view == "CC_R":
                 img = img[:,centerH-int(H*0.3):centerH+int(H*0.3),centerW-distance_to_sideR-int(W*0.08):]
                 _,Hx,Wx = img.size()
-                transform = T.Pad((int(Hx/1.75)-Wx,0,0,0))
+                transform = T.Compose([ 
+                    T.Pad((int(Hx/1.75)-Wx,0,0,0)),
+                    T.ToPILImage(),])
                 img = transform(img)
+
             else:
                 raise Exception(f"{view} is not an available option for View!")
 
             # img = img[:,centerH-int(H*0.3):centerW+int(H*0.5),:]
-            image = T.ToPILImage()(img)
-        image = image.resize((config.INPUT_IMAGE_WIDTH,config.INPUT_IMAGE_HEIGHT)) # width,height
 
-        image = TF.to_tensor(image).float()
-
-        return image
+        return img
 
     def VinDr(self):
         dicom_paths = {}
@@ -124,12 +163,8 @@ class Dataset(datasets.VisionDataset):
         return dicom_paths
 
     def eliminate_unused_dicoms_VinDr(self,dicom_paths:dict,dataset:pd.DataFrame):
-        dataset = dataset[dataset["File Name"].isin(list(dicom_paths.keys()))]
+        dataset = dataset[dataset["File Name"].isin(list(dicom_paths.keys()))] # .apply(lambda x: x.split("/"))[1]
         return dataset
-
-
-    def INBreast(self):
-        return {img.split("/")[-1].split("_")[0]:img for img in os.listdir(self.imgs_dir)}
 
     def dicom_open(self,filename):
         # enter DICOM image name for pattern
@@ -146,6 +181,8 @@ class Dataset(datasets.VisionDataset):
             permission = input("Do you want to delete the file? Y/N\n")
             if permission == "Y":
                 os.remove(os.path.join(self.imgs_dir,filename))
+            else:
+                pass
 
     @staticmethod
     def bi_rads_to_int(a):
@@ -173,10 +210,19 @@ class Dataset(datasets.VisionDataset):
         return str(self.dataset)
 
 if __name__=="__main__":
-    dataset_name = "VinDr"
-    train, test ,imgs_dir, img_type= XLS(dataset_name).get_all_info()
+    train, test ,imgs_dir= XLS().get_all_info()
 
-    train = Dataset(train,imgs_dir,dataset_name)
-    test = Dataset(test,imgs_dir,dataset_name)
+    train = Dataset(train,imgs_dir,True)
+    test = Dataset(test,imgs_dir,False)
 
-    print(next(iter(train)))
+    tr = [0,0,0]
+    for data,bi_rads in train:
+        print(bi_rads.item())
+        tr[bi_rads.item()] += 1
+
+    te = [0,0,0]
+    for data,bi_rads in test:
+        te[bi_rads.item()] += 1
+
+    print(tr)
+    print(te)
