@@ -21,13 +21,17 @@ import pydicom
 import scipy.ndimage as ndi
 import random
 import time
+def rand_prob():
+    return 0.5*random.random()
 
 def get_transforms(train=True):
     if train:
         transform = T.Compose([
                             T.RandomHorizontalFlip(0.5),
                             T.RandomRotation(7*random.random()),
-                            T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
+                            T.ColorJitter(brightness=rand_prob(),contrast=rand_prob(),saturation=rand_prob(),hue=rand_prob()),
+                            T.Resize((config.INPUT_IMAGE_HEIGHT+7*config.ADD_RESIZE_B4_CROP,config.INPUT_IMAGE_WIDTH+4*config.ADD_RESIZE_B4_CROP)),
+                            T.RandomCrop((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
                             T.ToTensor(),
                         ])
     else:

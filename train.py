@@ -1,5 +1,5 @@
 from DataLoaders.dataset import Dataset
-from torchvision.models import densenet121 as load_model
+from torchvision.models import resnet50 as load_model
 from DataLoaders.XLS_utils import XLS
 # from Pytorch_model.unet import UNet as load_model
 # from ConnectedSegnet.connectedSegnet_model import ConSegnetsModel as load_model
@@ -29,18 +29,17 @@ def get_model():
     if config.LOAD_NEW_MODEL:
         kwargs = dict({"num_classes":config.NUM_CLASSES})
         model = load_model(pretrained=False,progress=True,**kwargs)
-
-        for param in model.features.parameters():
-            param.requires_grad_(True)
+        # for param in model.parameters():
+        #     param.requires_grad_(True)
 
         # for name,param in model.named_parameters():
         #     print(name,param.requires_grad)
         
 
         # model.classifier[-1] = torch.nn.Linear(4096,config.NUM_CLASSES)
-
-        # for name,param in model.named_parameters():
-        #     print(name,param.requires_grad)
+    
+        for name,param in model.named_parameters():
+            print(name,param.requires_grad)
 
         print("Random Weighted Model loaded.")
 
@@ -56,8 +55,8 @@ def get_model():
 
         # print(model)
 
-        for param in model.features.parameters():
-            param.requires_grad_(True)
+        for name,param in model.named_parameters():
+            print(name,param.requires_grad)
 
         return model.to(config.DEVICE)
 
@@ -126,12 +125,26 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader,fold):
             # targets = torch.stack([v.to(config.DEVICE) for v in targets]).float()
             images, targets = torch.stack(images).to(config.DEVICE), torch.stack(targets).view(-1).to(config.DEVICE)
             
-            optimizer.zero_grad()
             
             with torch.cuda.amp.autocast():
                 outputs = model(images)
                 loss_train = lossFunc(outputs,targets)
             
+            if config.L1regularization:
+                l1_lambda = 0.001
+                l1_norm = sum(p.abs().sum()
+                            for p in model.parameters())
+
+                loss_train = loss_train + l1_lambda * l1_norm
+
+            if config.L2regularization:
+                l2_lambda = 0.001
+                l2_norm = sum(p.pow(2.0).sum()
+                            for p in model.parameters())
+
+                loss_train = loss_train + l2_lambda * l2_norm
+            
+            optimizer.zero_grad()
 
             train_loss.append(loss_train.item())
             temp_loss = sum(train_loss[-20:]) / min([len(train_loss),20])
@@ -190,21 +203,22 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader,fold):
                 metrics["val"].append(scores_val.metric)
 
         if (epoch % config.SAVE_MODEL_PER_EPOCH == 0 and (epoch != 0 or config.VALIDATE_PER_EPOCH == 1)) or epoch == config.NUM_EPOCHS-1:
-            print("Saving Model State Dict...")
-            torch.save(model.state_dict(), config.MODEL_PATH+str(epoch)+".pth")
+            print("/nSaving Model State Dict...")
+            torch.save(model.state_dict(), config.MODEL_PATH+str(epoch)+str(fold)+".pth")
 
         # accumulate predictions from all images
         torch.set_num_threads(n_threads)
     return metrics
+
 def save_model_and_metrics(model,fold_metrics):
-    print("Saving Model...")
+    print("/nSaving Model...")
     name = "model_"+model.__class__.__name__+".pth"
     print(name)
     if name not in os.listdir(config.BASE_OUTPUT):
         torch.save(model.state_dict(), os.path.join(config.BASE_OUTPUT,name))
     
     jso = json.dumps(fold_metrics)
-    f = open(f"metrics_{model.__class__.__name__}.json","a")
+    f = open(f"output/metrics_{model.__class__.__name__}.json","a")
     f.write(jso)
     f.close()
     
@@ -221,6 +235,10 @@ def base():
 
     folds_metrics = {"training":[],"test":[]}
     kfold = KFold(n_splits=config.CV_K_FOLDS, shuffle=True)
+
+    testLoader = DataLoader(testDS,config.BATCH_SIZE,shuffle=False,sampler=testDS.sampler,num_workers=0,collate_fn=collate_fn)
+
+
     for fold, (train_ids, valid_ids) in enumerate(kfold.split(train_valDS)):
         print(f'FOLD {fold}')
         print('--------------------------------')
@@ -231,13 +249,12 @@ def base():
         training_metrics = training(model,trainLoader,lossFunc,opt,valLoader,fold)
         folds_metrics["training"].append(training_metrics)
 
+        test_metrics = testing(model,lossFunc,testLoader)
+        folds_metrics["test"].append(test_metrics)
+
     total_time = int(time.time()-total_time_start)/60
     print(f"---------- Training_time:{total_time} minute ----------")
-    
-    testLoader = DataLoader(testDS,config.BATCH_SIZE,shuffle=False,sampler=testDS.sampler,num_workers=0,collate_fn=collate_fn)
-    test_metrics = testing(model,lossFunc,testLoader)
-    folds_metrics["test"].append(test_metrics)
     save_model_and_metrics(model,folds_metrics)
-
+    
 if __name__ == "__main__":
     base()

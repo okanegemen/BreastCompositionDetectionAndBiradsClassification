@@ -4,7 +4,7 @@ import os
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Device: {DEVICE}")
 
-MAIN_DIR = "/home/alican/Documents/"
+MAIN_DIR = "/home/robotik/Documents/"
 DATASET_DIR = os.path.join(MAIN_DIR,"Datasets/")
 VINDR_DIR = os.path.join(DATASET_DIR,"VinDr-mammo")
 DATASET_NAME = "VinDr" # available datasets VinDr
@@ -34,15 +34,18 @@ NUM_CLASSES = 3
 NUM_LEVELS = 1
 
 CV_K_FOLDS = 5
-INIT_LR = 0.0001
-NUM_EPOCHS = 1
-BATCH_SIZE = 32
+INIT_LR = 0.00004
+NUM_EPOCHS = 50
+BATCH_SIZE = 16
+L1regularization = False
+L2regularization = False
 
 SAVE_MODEL_PER_EPOCH = 3
 VALIDATE_PER_EPOCH = 3
 
 INPUT_IMAGE_WIDTH = 120 # yatay
 INPUT_IMAGE_HEIGHT = 210 # dikey
+ADD_RESIZE_B4_CROP = 13 # increase resize size before croping
 
 THRESHOLD = 0.5
 PRINT_FREQ = None
@@ -51,7 +54,7 @@ BASE_OUTPUT = os.path.join(MAIN_DIR,"yoloV5/output")
 
 LOAD_NEW_MODEL = False
 
-MODEL_PATH = os.path.join(BASE_OUTPUT,"model_DenseNet.pth")
+MODEL_PATH = os.path.join(BASE_OUTPUT,"model_ResNet.pth")
 PLOT_ACC_PATH = os.path.sep.join([BASE_OUTPUT,"plot_acc.png"])
 PLOT_LOSS_PATH = os.path.sep.join([BASE_OUTPUT,"plot_loss.png"])
 PLOT_TEST = os.path.sep.join([BASE_OUTPUT,"plot_test.png"])
