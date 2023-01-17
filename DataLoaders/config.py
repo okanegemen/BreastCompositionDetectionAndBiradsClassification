@@ -6,8 +6,7 @@ print(f"Device: {DEVICE}")
 
 MAIN_DIR = "/home/robotik/Documents/"
 DATASET_DIR = os.path.join(MAIN_DIR,"Datasets/")
-VINDR_DIR = os.path.join(DATASET_DIR,"VinDr-mammo")
-DATASET_NAME = "VinDr" # available datasets VinDr
+TEKNOFEST = os.path.join(DATASET_DIR,"TEKNOFEST_MG_EGITIM_1")
 
 DATASET_PATH = os.path.join("dataset","train")
 
@@ -15,7 +14,7 @@ IMAGE_DATASET_PATH = os.path.join(DATASET_PATH,"images")
 MASK_DATASET_PATH = os.path.join(DATASET_PATH,"masks")
 HISTORY_PATH =  "output/history.txt"
 
-MINIMIZE_IMAGE = True
+MINIMIZE_IMAGE = False
 IGNORE_SIDE_PIXELS = 100 
 
 CONVERT_BI_RADS = True # Eğer True ise df['Bi-Rads'] = df['Bi-Rads'].replace([0,1,2,4, 5], [0,1,1,2,2]). Bi-Rads 3 ve 6 silinir
@@ -24,10 +23,12 @@ EQUALIZE = False # true enables histogram equalization
 AUTO_CONTRAST = False # true enables contrast func
 
 TRAIN_SPLIT = 0.80
-TEST_SPLIT = 0.2
+TEST_SPLIT = 0.15
 VAL_SPLIT = 0.1
 
 PIN_MEMORY = True if DEVICE == "cuda" else False
+
+MODEL_INPUT_CONCATED = True
 
 NUM_CHANNELS = 3
 NUM_CLASSES = 3
@@ -43,9 +44,8 @@ L2regularization = False
 SAVE_MODEL_PER_EPOCH = 3
 VALIDATE_PER_EPOCH = 3
 
-INPUT_IMAGE_WIDTH = 120 # yatay
-INPUT_IMAGE_HEIGHT = 210 # dikey
-ADD_RESIZE_B4_CROP = 13 # increase resize size before croping
+INPUT_IMAGE_WIDTH = 200 # yatay
+INPUT_IMAGE_HEIGHT = 250 # dikey
 
 THRESHOLD = 0.5
 PRINT_FREQ = None

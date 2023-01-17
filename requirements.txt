@@ -8,5 +8,6 @@ Pillow
 pandas
 scipy
 tqdm
-torchmetrics
 qqdm
+openpyxl==3.0.10
+torchmetrics
