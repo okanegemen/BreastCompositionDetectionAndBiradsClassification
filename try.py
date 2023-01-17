@@ -1,129 +1,331 @@
 
-from PIL import Image
 import torchvision
-from torchvision.models import efficientnet_b5;
-from torchvision import transforms as T
-import os
-import shutil
-
+import torchvision.models as models
 import torch
 import torch.nn as nn
-from PIL import Image
-import cv2 as cv
-import numpy as np
-import pydicom as dicom 
-
-path = "/Users/okanegemen/Desktop/yoloV5/INbreast Release 1.0/AllDICOMs/20586986_6c613a14b80a8591_MG_L_ML_ANON.dcm"
-
-dicom_img = dicom.dcmread(path)
-
-numpy_pixels = dicom_img.pixel_array
-img = np.resize(numpy_pixels,(600,600))
-img = np.array(img,dtype="float32")
 
 
-tensor = torch.from_numpy(img)
-tensor = tensor.float()
-tensor = torch.reshape(tensor,[1, 1, 600, 600])
+a = [0,1,2,3,4,5]
 
 
 
-class StochasticDepth(nn.Module):
-    """StochasticDepth
-    paper: https://link.springer.com/chapter/10.1007/978-3-319-46493-0_39
-    :arg
-        - prob: Probability of dying
-        - mode: "row" or "all". "row" means that each row survives with different probability
-    """
-    def __init__(self, prob, mode):
-        super(StochasticDepth, self).__init__()
-        self.prob = prob
-        self.survival = 1.0 - prob
-        self.mode = mode
-
-    def forward(self, x):
-        # if self.prob == 0.0 or not self.training:
-        #     return x
-        # else:
-            shape = [x.size(0)] + [1] * (x.ndim - 1) if self.mode == 'row' else [1]
-            x = x * torch.empty(shape).bernoulli_(self.survival).div_(self.survival).to(x.device)
-            print(x)
-            return x
-
-out = StochasticDepth(0.19487179487179487, 'row')
-
-tensor = torch.rand(10)
-out = out(tensor)
-
-print(out.size())
-
-model = efficientnet_b5()
-max = 0.19636363636363638
-min= 0.18545454545454548
-tensor = torch.rand(4)*(max-min)+min
-tensor = tensor.sort()
-print(tensor)
 
 
-binomial = torch.distributions.binomial.Binomial(probs=0.01)
-a=0.19272727272727275
-b = 0.1890909090909091
-c = a/b
+# print(model.parameters)
 
+# conv = torch.nan 
+# module_list = [modules for modules in model.children()]
+# buffer = []
+# temp = module_list[0]
+# while True:
+    
+#     buffer.append(temp)
+#     try:
+#         childOrParent = next(iter(buffer[-1].children()))[0]
+#         temp = childOrParent
+        
 
-print(c/a)
-print(c)
-print(a-b)
-
-# path = "/home/alican/Documents/Datasets/VinDr-mammo"
-# f = "Dicom_images"
-
-# transform = T.ToTensor()
-
-# folders = os.listdir(os.path.join(path,f))
-# for folder in folders:
-#     files = os.listdir(os.path.join(path,f,folder))
-#     image = Image.open(os.path.join(path,f,folder,files[0]))
-#     while True:
-#         try:
-#             value = transform(image).mean()
-#             if value < 0.105:
-#                 res = "Y"
-#             elif value >0.155:
-#                 res = "N"
-#             else:
-#                 image.show()
-#                 print(value)
-#                 res = str(input())
-            
-
-#             if res.capitalize() == "Y":
-#                 shutil.move(os.path.join(path,f,folder),os.path.join(path,"Temiz",folder))
-#             elif res.capitalize() == "N":
-#                 shutil.move(os.path.join(path,f,folder),os.path.join(path,"Kirli",folder))
-#             else:
-#                 raise Exception("Incorrect input")
-#         except:
-#             continue
+#     except StopIteration:
+#         conv = temp
 #         break
 
-import time
-import random
-from qqdm import qqdm, format_str
+    
 
-tw = qqdm(range(10), desc=format_str('bold', 'Description'))
+model = models.GoogLeNet()
 
-a = {2:1,3:2,4:4}
-print({3:1,
-        **a})
+# conv = torch.nan 
+# module_list = [modules for modules in model.children()]
+# temp = module_list[1:]
 
-import time
-import random
-from qqdm import qqdm, format_str
 
-tw = qqdm(range(10), desc=format_str('bold', 'Description'))
 
-a = {2:1,3:2,4:4}
-print({3:1,
-        **a})
+
+
+
+# buffer2 = []
+# module_list2 = [modules for modules in model.children()]
+# temp2 = module_list2[-1]
+
+
+
+
+
+# while True:
+    
+#     buffer2.append(temp2)
+#     try:
+#         childOrParent = next(iter(buffer2[-1].children()))[0]
+#         temp2 = childOrParent
+        
+
+#     except:
+#         linear = temp2
+#     break
+
+# try:
+
+#     if len(linear)!=1:
+#         linear[1] = nn.Identity()
+# except:
+#     linear = nn.Identity()
+    
+# print(linear)
+
+
+
+def modifyFirstLayertakeBody(model):
+        module_list = [modules for modules in model.children()]
+
+        temp = module_list[0]
+        body = module_list[1:-1]
+        last = module_list[-1]
+        buffer = []
+
+        firstBlock = []
+
+        count = 0
+
+        while True:
+            buffer.append(temp)
+            try:
+                childOrParent = next(iter(buffer[-1].children()))[0]
+                temp = childOrParent
+
+                
+                count +=1
+            except:
+                
+                if count==1:
+                    firstBlock.append(buffer[0][0])
+                    break
+                    
+                firstBlock.append(temp)
+                break 
+
+
+        oneOrTwoDim = 0
+
+        length = 0
+
+        try:
+            length=len(firstBlock[0])
+
+            if length!=0:
+                oneOrTwoDim = 2
+        except TypeError:
+            
+            oneOrTwoDim = 1
+
+
+
+
+
+        lookFor = module_list[0]
+
+        try:
+
+            if len(lookFor)!=0:
+                firstBody = []
+                firstBody.append(lookFor[1:])
+        except:
+            firstBody = torch.nan
+            
+        print(firstBlock)
+
+        try:
+            if oneOrTwoDim == 1:
+
+
+
+
+                firstBlock[0] = nn.Conv2d(256,
+                                            firstBlock[0].out_channels,
+                                            firstBlock[0].kernel_size,
+                                            firstBlock[0].stride,
+                                            firstBlock[0].padding,
+                                            firstBlock[0].dilation,
+                                            firstBlock[0].groups,
+                                            bias=firstBlock[0].bias)
+
+            else: 
+                firstBlock[0][0] = nn.Conv2d(256,
+                                                firstBlock[0][0].out_channels,
+                                                firstBlock[0][0].kernel_size,
+                                                firstBlock[0][0].stride,
+                                                firstBlock[0][0].padding,
+                                                firstBlock[0][0].dilation,
+                                                firstBlock[0][0].groups,
+                                                bias=firstBlock[0][0].bias)
+                
+        except:
+            firstBlock[0].conv = nn.Conv2d(256,
+                                            firstBlock[0].conv.out_channels,
+                                            firstBlock[0].conv.kernel_size,
+                                            firstBlock[0].conv.stride,
+                                            firstBlock[0].conv.padding,
+                                            firstBlock[0].conv.dilation,
+                                            firstBlock[0].conv.groups,
+                                            firstBlock[0].conv.bias
+                                            )
+        
+
+
+
+                    
+
+        return firstBlock,firstBody,body
+
+def changeLastlayer(model):
+    buffer2 = []
+    module_list2 = [modules for modules in model.children()]
+    temp2 = module_list2[-1]
+
+
+
+
+
+    while True:
+        
+        buffer2.append(temp2)
+        try:
+            childOrParent = next(iter(buffer2[-1].children()))[0]
+            temp2 = childOrParent
+            
+
+        except:
+            linear = temp2
+        break
+    new_buffer = []
+    try:
+        
+        if len(linear)!=1:
+            new_buffer.append(linear[1])
+            linear[1] = nn.Identity()
+    except:
+        new_buffer.append(linear)
+        linear = torch.nan
+
+
+    return new_buffer,linear
+
+
+
+firstBlock,firstBody,body = modifyFirstLayertakeBody(model)
+# module_list = [modules for modules in model.children()]
+
+# temp = module_list[0]
+# body = module_list[1:-1]
+# last = module_list[-1]
+# buffer = []
+
+# firstBlock = []
+
+# count = 0
+
+# while True:
+#     buffer.append(temp)
+#     try:
+#         childOrParent = next(iter(buffer[-1].children()))[0]
+#         temp = childOrParent
+
+        
+#         count +=1
+#     except:
+        
+#         if count==1:
+#             firstBlock.append(buffer[0][0])
+#             break
+            
+#         firstBlock.append(temp)
+#         break 
+
+
+# oneOrTwoDim = 0
+
+# length = 0
+
+# try:
+#     length=len(firstBlock[0])
+
+#     if length!=0:
+#         oneOrTwoDim = 2
+# except TypeError:
+    
+#     oneOrTwoDim = 1
+
+
+
+
+
+# lookFor = module_list[0]
+
+# try:
+
+#     if len(lookFor)!=0:
+#         firstBody = []
+#         firstBody.append(lookFor[1:])
+# except:
+#     print("First Module have just one element")
+
+
+
+# try:
+#     if oneOrTwoDim == 1:
+
+
+
+
+#         firstBlock[0] = nn.Conv2d(256,
+#                                     firstBlock[0].out_channels,
+#                                     firstBlock[0].kernel_size,
+#                                     firstBlock[0].stride,
+#                                     firstBlock[0].padding,
+#                                     firstBlock[0].dilation,
+#                                     firstBlock[0].groups,
+#                                     bias=firstBlock[0].bias)
+
+#     else: 
+#         firstBlock[0][0] = nn.Conv2d(256,
+#                                         firstBlock[0][0].out_channels,
+#                                         firstBlock[0][0].kernel_size,
+#                                         firstBlock[0][0].stride,
+#                                         firstBlock[0][0].padding,
+#                                         firstBlock[0][0].dilation,
+#                                         firstBlock[0][0].groups,
+#                                         bias=firstBlock[0][0].bias)
+# except:
+#     firstBlock[0].conv = nn.Conv2d(256,
+#                                     firstBlock[0].conv.out_channels,
+#                                     firstBlock[0].conv.kernel_size,
+#                                     firstBlock[0].conv.stride,
+#                                     firstBlock[0].conv.padding,
+#                                     firstBlock[0].conv.dilation,
+#                                     firstBlock[0].conv.groups,
+#                                     firstBlock[0].conv.bias
+#                                     )
+
+
+            
+
+# print(len(firstBlock))
+
+
+                
+
+
+            
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
 
