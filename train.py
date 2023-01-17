@@ -61,12 +61,10 @@ def get_model():
         return model.to(config.DEVICE)
 
 def get_dataset():
-    train,imgs_dir = XLS("Dicom_images").get_all_info()
+    train,test = XLS().return_datasets()
 
-    train = Dataset(train,imgs_dir,True)
-
-    test,imgs_dir = XLS("Test").get_all_info()
-    test = Dataset(test,imgs_dir,False)
+    train = Dataset(train,True)
+    test = Dataset(test,False)
 
     return train, test
 
@@ -120,10 +118,15 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader,fold):
         train_loss = []
         for idx_t,traindata in enumerate(tw :=qqdm(trainLoader, desc=format_str('bold', 'Description'))):
             images,targets = traindata
+            print(targets)
             # send the input to the device
-            # images = torch.stack([image.to(config.DEVICE) for image in images])
-            # targets = torch.stack([v.to(config.DEVICE) for v in targets]).float()
-            images, targets = torch.stack(images).to(config.DEVICE), torch.stack(targets).view(-1).to(config.DEVICE)
+            for idx,(image,target) in enumerate(zip(images,targets)):
+                if config.MODEL_INPUT_CONCATED:
+                    images[idx] = torch.stack([image[name] for image,name in zip(image,target["names"])])
+
+                else:
+                    # TO DO
+                    pass
             
             optimizer.zero_grad()
             

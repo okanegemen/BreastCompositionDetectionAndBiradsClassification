@@ -1,70 +1,73 @@
 import os
 import pandas as pd
-import random
-import numpy as np
-
+from sklearn.model_selection import train_test_split
+import ast
+# import config
 if __name__ == "__main__":
     import config
 else:
-    # import config
     import DataLoaders.config as config
 
 # importing
 class XLS():
-    def __init__(self,img_folder):
-        self.img_folder = img_folder
-        self.Dataset_name = config.DATASET_NAME
-
-        if self.Dataset_name == "VinDr":
-            self.df = self.VinDr_mammo()
-
-    def get_all_info(self):
-        dataset = self.df
-        image_dir = self.return_images_dir()
-
-        return dataset, image_dir
+    def __init__(self):
+        self.root = config.TEKNOFEST
+        self.columns = ["HASTANO",	
+                "BIRADS KATEGORİSİ",
+                "MEME KOMPOZİSYONU",	
+                "KADRAN BİLGİSİ (SAĞ)",	
+                "KADRAN BİLGİSİ (SOL)",	
+                "Birads Skoru (EK BİLGİ OLARAK VERİLMİŞTİR, YARIŞMADA İSTENMEYECEKTİR)"
+                ]
+        self.df = self.teknofest_data()
 
     def return_datasets(self, test_split = config.TEST_SPLIT):
-
-        self.idxs = [*range(len(self.df))]
-        random.shuffle(self.idxs)
-        self.split = int(test_split*len(self.idxs))
-
-        self.train_idxs = self.idxs[self.split:]
-        self.test_idxs = self.idxs[:self.split]
-
-        remain_set = self.df[self.df.index.isin(self.train_idxs)].sample(frac = 1).reset_index(drop=True)
-        test = self.df[self.df.index.isin(self.test_idxs)].sample(frac = 1).reset_index(drop=True)
-
+        remain_set, test = train_test_split(self.df,test_size=test_split,shuffle=True,stratify=self.df["BIRADS KATEGORİSİ"],random_state=44)
         return remain_set, test
 
-    def return_images_dir(self):
-        return os.path.join(self.root,self.img_folder)
+    def teknofest_data(self):
+        info_filename = "veribilgisi.xlsx"
 
-    def VinDr_mammo(self):
-        self.root = config.VINDR_DIR
-        info_filename = "breast-level_annotations.csv"
+        excel_data = pd.read_excel(os.path.join(self.root,info_filename))
+        df = pd.DataFrame(excel_data, columns = self.columns)
 
-        df = pd.read_csv(os.path.join(self.root,info_filename))
+        df[self.columns[0]] = df[self.columns[0]].apply(lambda x: str(x))
 
-        df["ACR"] = df["breast_density"].apply(lambda x: list(x)[-1]).replace(["A","B","C","D"],[1,2,3,4])
-        df['Bi-Rads'] = df['breast_birads'].apply(lambda x: int(list(x)[-1]))
-        df["File Name"] = df[['study_id', 'image_id']].agg('/'.join, axis=1)
+        df[self.columns[1]] = df[self.columns[1]].apply(lambda x: self.birads_to_int(x))
 
-        df.rename(columns={"view_position":"View","laterality":"Laterality"},inplace=True)
+        df[self.columns[2]] = df[self.columns[2]].apply(lambda x: self.kompozisyon_to_int(x))
+        
+        df[self.columns[3]] = df[self.columns[3]].fillna("[]")
+        df[self.columns[4]] = df[self.columns[4]].fillna("[]")
+        
+        df[self.columns[3]] = df[self.columns[3]].apply(lambda x:ast.literal_eval(x))
+        df[self.columns[4]] = df[self.columns[4]].apply(lambda x:ast.literal_eval(x))
 
-        eliminated_columns_names = ["series_id","split","height","width","breast_birads","breast_density","image_id","study_id"]
-        df = df.drop(eliminated_columns_names, axis=1)
+        df[self.columns[3]] = df[self.columns[3]].apply(lambda x:self.kadran_to_int(x))
+        df[self.columns[4]] = df[self.columns[4]].apply(lambda x:self.kadran_to_int(x))
 
-        if config.CONVERT_BI_RADS:
-            df = df[df["Bi-Rads"]!= 6]
-            df = df[df["Bi-Rads"]!= 3]
-            df['Bi-Rads'] = df['Bi-Rads'].replace([0,1,2,4,5], [0,1,1,2,2])
+        df[self.columns[5]] = df[self.columns[5]].apply(lambda x: int(list(x)[9])).astype("int64")
 
         return df
-
+    
+    @classmethod
+    def kadran_to_int(cls, kadranlar:list, choices = ["ÜST DIŞ","ÜST İÇ","ALT İÇ","ALT DIŞ", "MERKEZ"]):
+        if len(kadranlar)>0:
+            return [choices.index(kadran) for kadran in kadranlar]
+        else:
+            return []
+    
+    @classmethod
+    def kompozisyon_to_int(cls, kompozisyon:str, choices = ["A","B","C","D"]):
+        return choices.index(kompozisyon)
+    
+    @classmethod
+    def birads_to_int(cls, birads:str, choices = ["BI-RADS0","BI-RADS1-2","BI-RADS4-5"]):
+        return choices.index(birads)
+            
 if __name__ == "__main__":
-    train,test = XLS().return_datasets()
+    data_class =  XLS()
+    train,test =data_class.return_datasets()
 
-    print(train["File Name"][0])
+    print(train)
     print(test)

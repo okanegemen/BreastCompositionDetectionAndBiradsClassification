@@ -7,4 +7,5 @@ opencv-python
 xlrd
 Pillow
 pandas
+openpyxl==3.0.10
 torchmetrics

@@ -25,8 +25,8 @@ import time
 def get_transforms(train=True):
     if train:
         transform = T.Compose([
-                            T.RandomHorizontalFlip(0.5),
-                            T.RandomRotation(7*random.random()),
+                            # T.RandomHorizontalFlip(0.5),
+                            # T.RandomRotation(7*random.random()),
                             T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
                             T.ToTensor(),
                         ])
@@ -43,26 +43,25 @@ def get_transforms(train=True):
 
 
 class Dataset(datasets.VisionDataset):
-    def __init__(self,dataset: pd.DataFrame,imgs_dir:str,train_transform=True):
-        super().__init__(imgs_dir)
+    def __init__(self,dataset: pd.DataFrame,train_transform=True):
+        super().__init__(self,dataset)
         if train_transform:
             print("Train data is preparing...")
         else:
             print("Test data is preparing...")
 
+        self.dcm_names = ["LCC","LMLO","RCC","RMLO"]
+
         self.dataset = dataset
-        self.imgs_dir = imgs_dir
-        self.dataset_name = config.DATASET_NAME
+        self.dataset_name = config.TEKNOFEST
         self.transform = get_transforms(train_transform)
 
-        if self.dataset_name == "VinDr":
-            self.imgs_name = self.VinDr()
-            self.dataset = self.eliminate_unused_dicoms_VinDr(self.imgs_name,self.dataset) # eliminates rows in dataframe of dataset which are not in the image directory, deleted or moved
+        self.dicom_paths = self.dicom_paths_func()
+        self.dataset = self.eliminate_unused_dicoms(self.dicom_paths,self.dataset) # eliminates rows in dataframe of dataset which are not in the image directory, deleted or moved
+        categories = self.dataset["BIRADS KATEGORİSİ"].to_list()
 
-        categories = self.dataset["Bi-Rads"].to_list()
-        min_idx = min(list(categories))
-        self.ids = [x-min_idx for x in list(categories)]
-        # category_ids = list(categories)
+        self.ids = [x for x in list(categories)]
+
         class_weights = get_class_weights(self.ids)
         self.sampler = get_sampler(self.ids,class_weights)
 
@@ -70,119 +69,71 @@ class Dataset(datasets.VisionDataset):
         data = self.dataset.iloc[index,:]
         dicti = data.to_dict()
 
-        self.view = dicti["View"]+"_"+dicti["Laterality"]
-        image = self.loadImg(self.imgs_name[dicti["File Name"]],self.view)
+        images = self.loadImg(dicti["HASTANO"])
 
-        bi_rads = torch.tensor(dicti["Bi-Rads"],dtype=torch.int64)
+        birads = torch.tensor(dicti["BIRADS KATEGORİSİ"],dtype=torch.int64)
+        acr = torch.tensor(dicti["MEME KOMPOZİSYONU"])
+        kadran_r = torch.tensor(dicti["KADRAN BİLGİSİ (SAĞ)"])
+        kadran_l = torch.tensor(dicti["KADRAN BİLGİSİ (SOL)"])
 
-        image = self.transform(image)
-        # a = T.ToPILImage()(image)
-        # a.show()
-        # time.sleep(1)
-        return  image,bi_rads
+        for name,image in images.items():
+            images[name] = self.transform(image)
+            max_value = images[name].max()
+            # print(images[name].unique())
+            # T.ToPILImage()(images[name]*255).show()
+            # time.sleep(1)
+        images = {key:image/max_value for key,image in images.items()}
+           
+        target = {
+            "birads":birads,
+            "acr":acr,
+            "kadran_r":kadran_r,
+            "kadran_l":kadran_l,
+            "names":images.keys()
+        }
+        return  images,target
     
 
-    def loadImg(self,filename,view):
-        if self.dataset_name == "VinDr":
-            image = Image.open(os.path.join(self.imgs_dir,filename))
+    def loadImg(self,hastano):
+        images = {}
+        for dcm in self.dcm_names:
+            image = self.dicom_open(os.path.join(hastano,dcm+".dcm"))
 
-        if config.NUM_CHANNELS == 1:
-            image = ImageOps.grayscale(image)
+            image = Image.fromarray(image)
 
-        elif config.NUM_CHANNELS == 3:
-            image = image.convert('RGB')
+            if config.NUM_CHANNELS == 1:
+                image = ImageOps.grayscale(image)
 
-        if config.EQUALIZE:
-            image = ImageOps.equalize(image)
-        
-        if config.AUTO_CONTRAST:
-            image = ImageOps.autocontrast(image)
-        
-        if config.MINIMIZE_IMAGE:
-            transform = T.Compose([
-                        T.PILToTensor()
-                        ])
-                
-            img = transform(image)
-            img = img/255
-            _,H,W = img.size()
+            elif config.NUM_CHANNELS == 3:
+                image = image.convert('RGB')
 
-            ignore = config.IGNORE_SIDE_PIXELS
-            temp = img[:,ignore:-ignore,ignore:-ignore]
+            if config.EQUALIZE:
+                image = ImageOps.equalize(image)
+            
+            if config.AUTO_CONTRAST:
+                image = ImageOps.autocontrast(image)
+            
+            images[dcm] = image
 
-            _,centerH,centerW = ndi.center_of_mass(temp.detach().cpu().numpy())
-            centerH, centerW = int(centerH)+ignore,int(centerW)+ignore
-            distance_to_sideR = W - centerW
+        return images
 
-            if view == "MLO_L":
-                img = img[:,centerH-int(H*0.25):centerH+int(H*0.4),:centerW+int(W*0.3)]
-                _,Hx,Wx = img.size()
-                transform = T.Compose([
-                    T.Pad((0,0,int(Hx/1.75)-Wx,0)),
-                    T.ToPILImage(),])
-                img = transform(img)
+    def dicom_paths_func(self):
+        folder_names =  [folder for folder in os.listdir(config.TEKNOFEST) if len(folder.split("."))<2]
+        return folder_names
 
-            elif view == "MLO_R":
-                img = img[:,centerH-int(H*0.25):centerH+int(H*0.4),centerW-distance_to_sideR -int(W*0.08):]
-                _,Hx,Wx = img.size()
-                transform = T.Compose([
-                    T.Pad((int(Hx/1.75)-Wx,0,0,0)),
-                    T.ToPILImage(),])
-                img = transform(img)
-
-            elif view == "CC_L":
-                img = img[:,centerH-int(H*0.3):centerH+int(H*0.3),:centerW+int(W*0.3)]
-                _,Hx,Wx = img.size()
-                transform = T.Compose([
-                    T.Pad((0,0,int(Hx/1.75)-Wx,0)),
-                    T.ToPILImage(),])
-
-                img = transform(img)
-            elif view == "CC_R":
-                img = img[:,centerH-int(H*0.3):centerH+int(H*0.3),centerW-distance_to_sideR-int(W*0.08):]
-                _,Hx,Wx = img.size()
-                transform = T.Compose([ 
-                    T.Pad((int(Hx/1.75)-Wx,0,0,0)),
-                    T.ToPILImage(),])
-                img = transform(img)
-
-            else:
-                raise Exception(f"{view} is not an available option for View!")
-
-            # img = img[:,centerH-int(H*0.3):centerW+int(H*0.5),:]
-
-        return img
-
-    def VinDr(self):
-        dicom_paths = {}
-        folder_names =  os.listdir(self.imgs_dir)
-        for folder in folder_names:
-            dicom_names = os.listdir(os.path.join(self.imgs_dir,folder))
-            for dicom_name in dicom_names:
-                dicom_paths[os.path.join(folder,dicom_name.split(".")[0])] = os.path.join(folder,dicom_name)
-        return dicom_paths
-
-    def eliminate_unused_dicoms_VinDr(self,dicom_paths:dict,dataset:pd.DataFrame):
-        dataset = dataset[dataset["File Name"].isin(list(dicom_paths.keys()))] # .apply(lambda x: x.split("/"))[1]
+    def eliminate_unused_dicoms(self,dicom_folders:dict,dataset:pd.DataFrame):
+        dataset = dataset[dataset["HASTANO"].isin(dicom_folders)]
         return dataset
 
-    def dicom_open(self,filename):
+    def dicom_open(self,path):
         # enter DICOM image name for pattern
         # result is a list of 1 element
-        try:
-            name = pydicom.data.data_manager.get_files(self.imgs_dir, filename)[0]
-            
-            ds = pydicom.dcmread(name)
-            array = (ds.pixel_array/4095) # normal
-            return array
-
-        except:
-            print(f"{filename} is not a dicom file.")
-            permission = input("Do you want to delete the file? Y/N\n")
-            if permission == "Y":
-                os.remove(os.path.join(self.imgs_dir,filename))
-            else:
-                pass
+        name = pydicom.data.data_manager.get_files(config.TEKNOFEST,path)[0]
+        
+        ds = pydicom.dcmread(name)
+        img = ds.pixel_array
+        img = np.array(img).astype(np.float64)
+        return img
 
     @staticmethod
     def bi_rads_to_int(a):
@@ -203,6 +154,26 @@ class Dataset(datasets.VisionDataset):
         elif a == "R":
             return 1
         
+    @classmethod
+    def kadran_to_bool(cls, kadranlar:list, choices = ["ÜST DIŞ","ÜST İÇ","ALT İÇ","ALT DIŞ", "MERKEZ"]):
+        binary_list = [0,0,0,0,0]
+        if len(kadranlar)>0:
+            for kadran in kadranlar:
+                binary_list[choices.index(kadran)] += 1
+        return binary_list
+    
+    @classmethod
+    def kompozisyon_to_bool(cls, kompozisyon:str, choices = ["A","B","C","D"]):
+        binary_list = [0,0,0,0]
+        binary_list[choices.index(kompozisyon)] += 1
+        return binary_list
+    
+    @classmethod
+    def birads_to_bool(cls, birads:str, choices = ["BI-RADS0","BI-RADS1-2","BI-RADS4-5"]):
+        binary_list = [0,0,0]
+        binary_list[choices.index(birads)] += 1
+        return binary_list
+
     def __len__(self) -> int:
         return len(self.dataset)
 
@@ -210,19 +181,9 @@ class Dataset(datasets.VisionDataset):
         return str(self.dataset)
 
 if __name__=="__main__":
-    train, test ,imgs_dir= XLS().get_all_info()
+    train, test= XLS().return_datasets()
 
-    train = Dataset(train,imgs_dir,True)
-    test = Dataset(test,imgs_dir,False)
+    train = Dataset(train,True)
+    test = Dataset(test,False)
 
-    tr = [0,0,0]
-    for data,bi_rads in train:
-        print(bi_rads.item())
-        tr[bi_rads.item()] += 1
-
-    te = [0,0,0]
-    for data,bi_rads in test:
-        te[bi_rads.item()] += 1
-
-    print(tr)
-    print(te)
+    print(train[0])
