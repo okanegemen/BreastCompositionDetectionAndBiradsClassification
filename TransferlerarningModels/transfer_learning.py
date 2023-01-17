@@ -9,23 +9,23 @@ import cv2 as cv
 import numpy as np
 import pydicom as dicom 
 
-path = "/Users/okanegemen/Desktop/yoloV5/INbreast Release 1.0/AllDICOMs/20586986_6c613a14b80a8591_MG_L_ML_ANON.dcm"
+# path = "/Users/okanegemen/Desktop/yoloV5/INbreast Release 1.0/AllDICOMs/20586986_6c613a14b80a8591_MG_L_ML_ANON.dcm"
 
-dicom_img = dicom.dcmread(path)
+# dicom_img = dicom.dcmread(path)
 
-numpy_pixels = dicom_img.pixel_array
-img = np.resize(numpy_pixels,(600,600))
-img = np.array(img,dtype="float32")
-
-
-tensor = torch.from_numpy(img)
-tensor = tensor.float()
-tensor = torch.reshape(tensor,[1, 1, 600, 600])
+# numpy_pixels = dicom_img.pixel_array
+# img = np.resize(numpy_pixels,(600,600))
+# img = np.array(img,dtype="float32")
 
 
-import warnings
+# tensor = torch.from_numpy(img)
+# tensor = tensor.float()
+# tensor = torch.reshape(tensor,[1, 1, 600, 600])
 
-warnings.filterwarnings("ignore")
+
+# import warnings
+
+# warnings.filterwarnings("ignore")
 
 
 
@@ -111,8 +111,6 @@ class ResNet101(nn.Module):
         return out
 
 
-model = models.resnet50()
-liste = [module for module in model.modules()]
 
 class Resnet50(nn.Module):
     def __init__(self,in_channels):
@@ -149,10 +147,7 @@ class Resnet50(nn.Module):
         return {"birads":birads , "acr":composition ,"kadran":kadran} 
 
 
-resnet = Resnet50(1)   
 
-out = resnet(tensor)
-print(torch.argmax(out["birads"]))
 
 class FeaturesImg(nn.Module):
     def __init__(self ,inplanes):
@@ -386,22 +381,3 @@ class ConcatModel(nn.Module):
 
 
         return {"birads":birads , "acr":composition ,"kadran":kadran}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-
