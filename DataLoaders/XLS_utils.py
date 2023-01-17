@@ -2,6 +2,7 @@ import os
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import ast
+import glob
 # import config
 if __name__ == "__main__":
     import config
@@ -26,7 +27,7 @@ class XLS():
         return remain_set, test
 
     def teknofest_data(self):
-        info_filename = "veribilgisi.xlsx"
+        info_filename = glob.glob(os.path.join(config.TEKNOFEST,'*.xlsx'))[0]
 
         excel_data = pd.read_excel(os.path.join(self.root,info_filename))
         df = pd.DataFrame(excel_data, columns = self.columns)

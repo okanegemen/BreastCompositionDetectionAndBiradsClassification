@@ -23,21 +23,21 @@ EQUALIZE = False # true enables histogram equalization
 AUTO_CONTRAST = False # true enables contrast func
 
 TRAIN_SPLIT = 0.80
-TEST_SPLIT = 0.15
+TEST_SPLIT = 0.17
 VAL_SPLIT = 0.1
 
 PIN_MEMORY = True if DEVICE == "cuda" else False
 
 MODEL_INPUT_CONCATED = True
 
-NUM_CHANNELS = 3
+NUM_CHANNELS = 1
 NUM_CLASSES = 3
 NUM_LEVELS = 1
 
 CV_K_FOLDS = 5
-INIT_LR = 0.00004
-NUM_EPOCHS = 50
-BATCH_SIZE = 16
+INIT_LR = 0.0001
+NUM_EPOCHS = 8
+BATCH_SIZE = 26
 L1regularization = False
 L2regularization = False
 
@@ -52,7 +52,7 @@ PRINT_FREQ = None
 
 BASE_OUTPUT = os.path.join(MAIN_DIR,"yoloV5/output")
 
-LOAD_NEW_MODEL = False
+LOAD_NEW_MODEL = True
 
 MODEL_PATH = os.path.join(BASE_OUTPUT,"model_ResNet.pth")
 PLOT_ACC_PATH = os.path.sep.join([BASE_OUTPUT,"plot_acc.png"])

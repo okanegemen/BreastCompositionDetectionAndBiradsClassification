@@ -51,3 +51,19 @@
 #     raise Exception(f"{view} is not an available option for View!")
 
 # img = img[:,centerH-int(H*0.3):centerW+int(H*0.5),:]
+
+
+            
+            # if config.L1regularization:
+            #     l1_lambda = 0.001
+            #     l1_norm = sum(p.abs().sum()
+            #                 for p in model.parameters())
+
+            #     loss_train = loss_train + l1_lambda * l1_norm
+
+            # if config.L2regularization:
+            #     l2_lambda = 0.001
+            #     l2_norm = sum(p.pow(2.0).sum()
+            #                 for p in model.parameters())
+
+            #     loss_train = loss_train + l2_lambda * l2_norm

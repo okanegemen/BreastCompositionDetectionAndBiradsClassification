@@ -1,5 +1,5 @@
 from DataLoaders.dataset import Dataset
-from torchvision.models import resnet50 as load_model
+from TransferlerarningModels.transfer_learning import Resnet50 as load_model
 from DataLoaders.XLS_utils import XLS
 # from Pytorch_model.unet import UNet as load_model
 # from ConnectedSegnet.connectedSegnet_model import ConSegnetsModel as load_model
@@ -27,8 +27,7 @@ def collate_fn(batch):
 
 def get_model():
     if config.LOAD_NEW_MODEL:
-        kwargs = dict({"num_classes":config.NUM_CLASSES})
-        model = load_model(pretrained=False,progress=True,**kwargs)
+        model = load_model(4)
         # for param in model.parameters():
         #     param.requires_grad_(True)
 
@@ -38,8 +37,8 @@ def get_model():
 
         # model.classifier[-1] = torch.nn.Linear(4096,config.NUM_CLASSES)
     
-        for name,param in model.named_parameters():
-            print(name,param.requires_grad)
+        # for name,param in model.named_parameters():
+        #     print(name,param.requires_grad)
 
         print("Random Weighted Model loaded.")
 
@@ -118,34 +117,12 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader,fold):
         train_loss = []
         for idx_t,traindata in enumerate(tw :=qqdm(trainLoader, desc=format_str('bold', 'Description'))):
             images,targets = traindata
-            print(targets)
             # send the input to the device
-            for idx,(image,target) in enumerate(zip(images,targets)):
-                if config.MODEL_INPUT_CONCATED:
-                    images[idx] = torch.stack([image[name] for image,name in zip(image,target["names"])])
+            images, targets = torch.stack(images).to(config.DEVICE), torch.stack(targets).view(-1).to(config.DEVICE)
 
-                else:
-                    # TO DO
-                    pass
-            
-            
             with torch.cuda.amp.autocast():
-                outputs = model(images)
+                outputs = model(images)["birads"]
                 loss_train = lossFunc(outputs,targets)
-            
-            if config.L1regularization:
-                l1_lambda = 0.001
-                l1_norm = sum(p.abs().sum()
-                            for p in model.parameters())
-
-                loss_train = loss_train + l1_lambda * l1_norm
-
-            if config.L2regularization:
-                l2_lambda = 0.001
-                l2_norm = sum(p.pow(2.0).sum()
-                            for p in model.parameters())
-
-                loss_train = loss_train + l2_lambda * l2_norm
             
             optimizer.zero_grad()
 
@@ -192,7 +169,7 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader,fold):
                     images, targets = torch.stack(images).to(config.DEVICE), torch.stack(targets).view(-1).to(config.DEVICE)
                     if torch.cuda.is_available():
                         torch.cuda.synchronize()
-                    outputs = model(images)
+                    outputs = model(images)["birads"]
                     loss_val = lossFunc(outputs,targets)
 
                     val_loss.append(loss_val.item())

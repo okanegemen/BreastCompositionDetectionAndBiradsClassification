@@ -47,7 +47,8 @@ def get_transforms(train=True):
 class Dataset(datasets.VisionDataset):
     def __init__(self,dataset: pd.DataFrame,train_transform=True):
         super().__init__(self,dataset)
-        if train_transform:
+        self.train_transform = train_transform
+        if self.train_transform:
             print("Train data is preparing...")
         else:
             print("Test data is preparing...")
@@ -75,31 +76,32 @@ class Dataset(datasets.VisionDataset):
 
         birads = torch.tensor(dicti["BIRADS KATEGORİSİ"],dtype=torch.int64)
         acr = torch.tensor(dicti["MEME KOMPOZİSYONU"])
-        kadran_r = torch.tensor(dicti["KADRAN BİLGİSİ (SAĞ)"])
-        kadran_l = torch.tensor(dicti["KADRAN BİLGİSİ (SOL)"])
+        # kadran_r = torch.tensor(dicti["KADRAN BİLGİSİ (SAĞ)"])
+        # kadran_l = torch.tensor(dicti["KADRAN BİLGİSİ (SOL)"])
 
         for name,image in images.items():
             images[name] = self.transform(image)
-            max_value = images[name].max()
             # print(images[name].unique())
             # T.ToPILImage()(images[name]*255).show()
             # time.sleep(1)
-        images = {key:image/max_value for key,image in images.items()}
+        images = {key:image for key,image in images.items()}
+
+        image = torch.stack([image.squeeze() for image in images.values()])
            
         target = {
             "birads":birads,
-            "acr":acr,
-            "kadran_r":kadran_r,
-            "kadran_l":kadran_l,
-            "names":images.keys()
+            "acr":acr
+            # "kadran_r":kadran_r,
+            # "kadran_l":kadran_l,
+            # "names":images.keys()
         }
-        return  images,target
+        return  image,birads
     
 
     def loadImg(self,hastano):
         images = {}
         for dcm in self.dcm_names:
-            image = self.dicom_open(os.path.join(hastano,dcm+".dcm"))
+            image = self.dicom_open(hastano,dcm)
 
             image = Image.fromarray(image)
 
@@ -127,11 +129,16 @@ class Dataset(datasets.VisionDataset):
         dataset = dataset[dataset["HASTANO"].isin(dicom_folders)]
         return dataset
 
-    def dicom_open(self,path):
+    def dicom_open(self,hastano,dcm):
         # enter DICOM image name for pattern
         # result is a list of 1 element
-        name = pydicom.data.data_manager.get_files(config.TEKNOFEST,path)[0]
-        
+        if self.train_transform:
+            path = os.path.join(hastano,dcm+".dcm")
+            name = pydicom.data.data_manager.get_files(config.TEKNOFEST,path)[0]
+        else:
+            path = os.path.join("test",hastano,dcm+".dcm")
+            name = pydicom.data.data_manager.get_files(config.MAIN_DIR,path)[0]
+
         ds = pydicom.dcmread(name)
         img = ds.pixel_array
         img = np.array(img).astype(np.float64)
