@@ -105,13 +105,14 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader,fold):
         model.train()
 
         lr_scheduler = None
-        # if epoch == 0:
-        #     warmup_factor = 1.0 / 1000
-        #     warmup_iters = min(1000, len(trainLoader) - 1)
+        if epoch == 0:
+            warmup_factor = 1.0 / 1000
+            warmup_iters = min(1000, len(trainLoader) - 1)
 
-        #     lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        #         optimizer,mode="min",
-        #     )        
+            lr_scheduler = torch.optim.lr_scheduler.LinearLR(
+            optimizer, start_factor=warmup_factor, total_iters=warmup_iters
+            )
+        
 
         # loop over the training set
         train_loss = []

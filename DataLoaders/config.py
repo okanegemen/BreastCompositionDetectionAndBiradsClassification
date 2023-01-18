@@ -4,7 +4,7 @@ import os
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Device: {DEVICE}")
 
-MAIN_DIR = "/home/robotik/Documents/"
+MAIN_DIR = "/home/alican/Documents/"
 DATASET_DIR = os.path.join(MAIN_DIR,"Datasets/")
 TEKNOFEST = os.path.join(DATASET_DIR,"TEKNOFEST_MG_EGITIM_1")
 
@@ -22,8 +22,9 @@ CONVERT_BI_RADS = True # Eğer True ise df['Bi-Rads'] = df['Bi-Rads'].replace([0
 EQUALIZE = False # true enables histogram equalization
 AUTO_CONTRAST = False # true enables contrast func
 
+CROP_DATA = 0.8
 TRAIN_SPLIT = 0.80
-TEST_SPLIT = 0.17
+TEST_SPLIT = 0.6
 VAL_SPLIT = 0.1
 
 PIN_MEMORY = True if DEVICE == "cuda" else False
@@ -34,15 +35,15 @@ NUM_CHANNELS = 1
 NUM_CLASSES = 3
 NUM_LEVELS = 1
 
-CV_K_FOLDS = 5
+CV_K_FOLDS = 2
 INIT_LR = 0.0001
-NUM_EPOCHS = 8
-BATCH_SIZE = 26
+NUM_EPOCHS = 50
+BATCH_SIZE = 16
 L1regularization = False
 L2regularization = False
 
-SAVE_MODEL_PER_EPOCH = 3
-VALIDATE_PER_EPOCH = 3
+SAVE_MODEL_PER_EPOCH = 10
+VALIDATE_PER_EPOCH = 30
 
 INPUT_IMAGE_WIDTH = 200 # yatay
 INPUT_IMAGE_HEIGHT = 250 # dikey

@@ -102,20 +102,8 @@ class Dataset(datasets.VisionDataset):
         images = {}
         for dcm in self.dcm_names:
             image = self.dicom_open(hastano,dcm)
-
             image = Image.fromarray(image)
-
-            if config.NUM_CHANNELS == 1:
-                image = ImageOps.grayscale(image)
-
-            elif config.NUM_CHANNELS == 3:
-                image = image.convert('RGB')
-
-            if config.EQUALIZE:
-                image = ImageOps.equalize(image)
-            
-            if config.AUTO_CONTRAST:
-                image = ImageOps.autocontrast(image)
+            image = ImageOps.grayscale(image)
             
             images[dcm] = image
 
@@ -130,39 +118,14 @@ class Dataset(datasets.VisionDataset):
         return dataset
 
     def dicom_open(self,hastano,dcm):
-        # enter DICOM image name for pattern
-        # result is a list of 1 element
-        if self.train_transform:
-            path = os.path.join(hastano,dcm+".dcm")
-            name = pydicom.data.data_manager.get_files(config.TEKNOFEST,path)[0]
-        else:
-            path = os.path.join("test",hastano,dcm+".dcm")
-            name = pydicom.data.data_manager.get_files(config.MAIN_DIR,path)[0]
+        path = os.path.join(hastano,dcm+".dcm")
+        name = pydicom.data.data_manager.get_files(config.TEKNOFEST,path)[0]
 
         ds = pydicom.dcmread(name)
         img = ds.pixel_array
         img = np.array(img).astype(np.float64)
         return img
 
-    @staticmethod
-    def bi_rads_to_int(a):
-        if isinstance(a,int):
-            return a
-
-    @staticmethod
-    def view_to_int(a:str):
-        if a == "MLO":
-            return 0
-        elif a == "CC":
-            return 1
-
-    @staticmethod
-    def laterality_to_int(a:str):
-        if a == "L":
-            return 0
-        elif a == "R":
-            return 1
-        
     @classmethod
     def kadran_to_bool(cls, kadranlar:list, choices = ["ÜST DIŞ","ÜST İÇ","ALT İÇ","ALT DIŞ", "MERKEZ"]):
         binary_list = [0,0,0,0,0]
