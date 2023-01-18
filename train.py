@@ -139,7 +139,7 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader,fold):
             scores_train.update(outputs,targets)
             tw.set_infos({"Fold":fold,
                             "Epoch":f"{epoch}",
-                            "lr": f"{optimizer.param_groups[0]['lr']:.5f}",
+                            "lr": f"{optimizer.param_groups[0]['lr']:.7f}",
                             "loss":"%.4f"%temp_loss,
                             **scores_train.metrics()})
 
@@ -161,6 +161,9 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader,fold):
             val_loss = []
 
             # switch off autograd
+
+
+
             with torch.no_grad():
                 for idx_v, valData in enumerate(tw :=qqdm(valLoader, desc=format_str('bold', 'Description'))):
                     images, targets = valData
