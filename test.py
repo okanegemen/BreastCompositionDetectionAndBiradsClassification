@@ -25,7 +25,7 @@ def testing(model, lossFunc, testLoader):
             if torch.cuda.is_available():
                 torch.cuda.synchronize()
 
-            outputs = model(images)["birads"]
+            outputs = model(images)
             loss_test = lossFunc(outputs,targets)
 
             test_loss.append(loss_test.item())

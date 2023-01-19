@@ -127,8 +127,8 @@ class Resnet50(nn.Module):
         body = module_list[1:-1]
         self.featureExtracture = nn.Sequential(first_layer,*body)
         self.birads = nn.Linear(in_features=2048,out_features=3)
-        self.composition = nn.Linear(in_features=2048,out_features=4)
-        self.kadran = nn.Linear(in_features=2048,out_features=10)
+        # self.composition = nn.Linear(in_features=2048,out_features=4)
+        # self.kadran = nn.Linear(in_features=2048,out_features=10)
 
         
 
@@ -139,12 +139,12 @@ class Resnet50(nn.Module):
 
         out = out.view(out.size(0),-1)
         birads = self.birads(out)
-        composition = self.composition(out)
-        kadran = self.kadran(out)
+        # composition = self.composition(out)
+        # kadran = self.kadran(out)
 
 
 
-        return {"birads":birads , "acr":composition ,"kadran":kadran} 
+        return birads #{"birads":birads , "acr":composition ,"kadran":kadran} 
 
 
 

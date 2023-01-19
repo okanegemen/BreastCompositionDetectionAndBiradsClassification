@@ -27,35 +27,26 @@ def collate_fn(batch):
 
 def get_model():
     if config.LOAD_NEW_MODEL:
+        # kwargs = dict({"num_classes":config.NUM_CLASSES})
         model = load_model(4)
-        # for param in model.parameters():
-        #     param.requires_grad_(True)
-
-        # for name,param in model.named_parameters():
-        #     print(name,param.requires_grad)
         
-
-        # model.classifier[-1] = torch.nn.Linear(4096,config.NUM_CLASSES)
-    
-        # for name,param in model.named_parameters():
-        #     print(name,param.requires_grad)
+        # model.conv1.in_channels = config.NUM_CHANNELS
+        # model.fc.out_features = config.NUM_CLASSES
 
         print("Random Weighted Model loaded.")
+        # print(model)
 
         return model.to(config.DEVICE)
     else:
-        kwargs = dict({"num_classes":config.NUM_CLASSES})
-        model = load_model(pretrained=False,progress=True,**kwargs)
+        model = load_model(4)
         print("############# Previous weights loaded. ###################")
         model.load_state_dict(torch.load(config.MODEL_PATH))
         
         # print(model.classifier)
         # model.classifier = torch.nn.Linear(1024,config.NUM_CLASSES)
 
-        # print(model)
-
-        for name,param in model.named_parameters():
-            print(name,param.requires_grad)
+        # for name,param in model.named_parameters():
+        #     print(name,param.requires_grad)
 
         return model.to(config.DEVICE)
 
@@ -105,13 +96,13 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader,fold):
         model.train()
 
         lr_scheduler = None
-        if epoch == 0:
-            warmup_factor = 1.0 / 1000
-            warmup_iters = min(1000, len(trainLoader) - 1)
+        # if epoch == 0:
+        #     warmup_factor = 1.0 / 1000
+        #     warmup_iters = min(1000, len(trainLoader) - 1)
 
-            lr_scheduler = torch.optim.lr_scheduler.LinearLR(
-            optimizer, start_factor=warmup_factor, total_iters=warmup_iters
-            )
+        #     lr_scheduler = torch.optim.lr_scheduler.LinearLR(
+        #     optimizer, start_factor=warmup_factor, total_iters=warmup_iters
+        #     )
         
 
         # loop over the training set
@@ -122,7 +113,7 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader,fold):
             images, targets = torch.stack(images).to(config.DEVICE), torch.stack(targets).view(-1).to(config.DEVICE)
 
             with torch.cuda.amp.autocast():
-                outputs = model(images)["birads"]
+                outputs = model(images)
                 loss_train = lossFunc(outputs,targets)
             
             optimizer.zero_grad()
@@ -173,7 +164,7 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader,fold):
                     images, targets = torch.stack(images).to(config.DEVICE), torch.stack(targets).view(-1).to(config.DEVICE)
                     if torch.cuda.is_available():
                         torch.cuda.synchronize()
-                    outputs = model(images)["birads"]
+                    outputs = model(images)
                     loss_val = lossFunc(outputs,targets)
 
                     val_loss.append(loss_val.item())
@@ -188,7 +179,7 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader,fold):
 
         if (epoch % config.SAVE_MODEL_PER_EPOCH == 0 and (epoch != 0 or config.VALIDATE_PER_EPOCH == 1)) or epoch == config.NUM_EPOCHS-1:
             print("/nSaving Model State Dict...")
-            torch.save(model.state_dict(), config.MODEL_PATH+str(epoch)+str(fold)+".pth")
+            torch.save(model.state_dict(), config.MODEL_PATH+str(fold)+str(epoch)+".pth")
 
         # accumulate predictions from all images
         torch.set_num_threads(n_threads)

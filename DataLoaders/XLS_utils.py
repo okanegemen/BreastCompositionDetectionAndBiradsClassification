@@ -24,7 +24,8 @@ class XLS():
 
     def return_datasets(self, test_split = config.TEST_SPLIT):
         if config.CROP_DATA>0:
-            self.df,croped_data = train_test_split(self.df,test_size=config.CROP_DATA,shuffle=True,stratify=self.df["BIRADS KATEGORİSİ"],random_state=44)
+            self.df, _ = train_test_split(self.df,test_size=config.CROP_DATA,shuffle=True,stratify=self.df["BIRADS KATEGORİSİ"],random_state=44)
+
         remain_set, test = train_test_split(self.df,test_size=test_split,shuffle=True,stratify=self.df["BIRADS KATEGORİSİ"],random_state=44)
         return remain_set, test
 

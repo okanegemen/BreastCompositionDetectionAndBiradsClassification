@@ -20,6 +20,7 @@ import numpy as np
 import pydicom
 import scipy.ndimage as ndi
 import random
+import cv2
 import time
 def rand_prob():
     return 0.5*random.random()
@@ -27,6 +28,7 @@ def rand_prob():
 def get_transforms(train=True):
     if train:
         transform = T.Compose([
+                            T.ToPILImage(),
                             # T.RandomHorizontalFlip(0.5),
                             # T.RandomRotation(7*random.random()),
                             T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
@@ -34,14 +36,11 @@ def get_transforms(train=True):
                         ])
     else:
         transform = T.Compose([
+                            T.ToPILImage(),
                             T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
                             T.ToTensor(),
                         ])
     return transform
-
-# image = T.ToPILImage()(img)
-# image = image.resize((config.INPUT_IMAGE_WIDTH,config.INPUT_IMAGE_HEIGHT)) # width,height
-# image = TF.to_tensor(image).float()
 
 
 class Dataset(datasets.VisionDataset):
@@ -80,14 +79,14 @@ class Dataset(datasets.VisionDataset):
         # kadran_l = torch.tensor(dicti["KADRAN BİLGİSİ (SOL)"])
 
         for name,image in images.items():
+            image = torch.from_numpy(image).float().unsqueeze(0)
             images[name] = self.transform(image)
-            # print(images[name].unique())
-            # T.ToPILImage()(images[name]*255).show()
-            # time.sleep(1)
+            # print(images[name].max())
+            # T.ToPILImage()(images[name]).show()
+            # time.sleep(5)
         images = {key:image for key,image in images.items()}
 
         image = torch.stack([image.squeeze() for image in images.values()])
-           
         target = {
             "birads":birads,
             "acr":acr
@@ -102,9 +101,6 @@ class Dataset(datasets.VisionDataset):
         images = {}
         for dcm in self.dcm_names:
             image = self.dicom_open(hastano,dcm)
-            image = Image.fromarray(image)
-            image = ImageOps.grayscale(image)
-            
             images[dcm] = image
 
         return images
@@ -118,13 +114,11 @@ class Dataset(datasets.VisionDataset):
         return dataset
 
     def dicom_open(self,hastano,dcm):
-        path = os.path.join(hastano,dcm+".dcm")
-        name = pydicom.data.data_manager.get_files(config.TEKNOFEST,path)[0]
-
-        ds = pydicom.dcmread(name)
-        img = ds.pixel_array
-        img = np.array(img).astype(np.float64)
-        return img
+        path = os.path.join(config.TEKNOFEST,hastano,dcm+".dcm")
+        dicom_img = pydicom.dcmread(path)
+        numpy_pixels = dicom_img.pixel_array
+        img = np.array(numpy_pixels,dtype="float32")
+        return img/np.max(img)
 
     @classmethod
     def kadran_to_bool(cls, kadranlar:list, choices = ["ÜST DIŞ","ÜST İÇ","ALT İÇ","ALT DIŞ", "MERKEZ"]):
