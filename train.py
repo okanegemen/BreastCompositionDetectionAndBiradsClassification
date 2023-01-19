@@ -1,5 +1,5 @@
 from DataLoaders.dataset import Dataset
-from TransferlerarningModels.transfer_learning import Resnet50 as load_model
+from TransferlerarningModels.transfer_learning import ResNet101 as load_model
 from DataLoaders.XLS_utils import XLS
 # from Pytorch_model.unet import UNet as load_model
 # from ConnectedSegnet.connectedSegnet_model import ConSegnetsModel as load_model

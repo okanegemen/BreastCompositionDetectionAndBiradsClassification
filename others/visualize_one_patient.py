@@ -29,7 +29,7 @@ def dicom_open(path):
     img = ds.pixel_array
     img = np.array(img).astype(np.float64)
     print(img.max())
-    return (img-img.min())/img.max()
+    return (img-img.min())/(img.max()-img.min())
 
 def get_concat_h(im1, im2):
     dst = Image.new('RGB', (im1.width + im2.width, im1.height))
@@ -89,4 +89,4 @@ def four_concat(dcm_folders, dcm_names = ["LMLO","LCC","RMLO","RCC"]):
         c.show()
         time.sleep(1)
 if __name__ == "__main__":
-    four_image_show(845285991,w = 1000,h=1250)
+    four_image_show(845284064,w = 1000,h=1250)

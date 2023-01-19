@@ -3,9 +3,8 @@ import os
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Device: {DEVICE}")
-print(torch.version.cuda)
 
-MAIN_DIR = "/home/robotik/Documents/"
+MAIN_DIR = "/home/alican/Documents/"
 DATASET_DIR = os.path.join(MAIN_DIR,"Datasets/")
 TEKNOFEST = os.path.join(DATASET_DIR,"TEKNOFEST_MG_EGITIM_1")
 
@@ -22,7 +21,7 @@ NUM_LEVELS = 1
 
 INIT_LR = 0.0001
 NUM_EPOCHS = 8
-BATCH_SIZE = 32
+BATCH_SIZE = 16
 
 L1regularization = False
 L2regularization = False
