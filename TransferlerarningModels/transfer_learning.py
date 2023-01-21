@@ -107,12 +107,8 @@ class Resnet34(nn.Module):
         return out 
 
 
-resnet = Resnet34(1,3)
 
 
-out = resnet(tensor)
-
-print(out)
 
 
 class ResNet101(nn.Module):
@@ -462,33 +458,5 @@ class ConcatModel(nn.Module):
 
 model = models.resnet101()
 
-
-
-# items1 = [module for module in model.children()]
-
-
-# concat = ConcatModel(1,model)
-
-
-# items2 = [module for module in concat.children()]
-
-
-
-
-# file1 = open('item1.txt','w')
-
-# file2 = open("item2.txt","w")
-
-
-# for item1 in items1:
-#     file1.write(str(item1)+"\b")
-
-# for item2 in items2:
-
-#     file2.write(str(item2) + "\b")
-
-
-# file1.close()
-# file2.close()
 
 
