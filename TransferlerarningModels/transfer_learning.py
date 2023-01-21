@@ -9,23 +9,23 @@ import cv2 as cv
 import numpy as np
 import pydicom as dicom 
 
-# path = "/Users/okanegemen/Desktop/yoloV5/INbreast Release 1.0/AllDICOMs/20586986_6c613a14b80a8591_MG_L_ML_ANON.dcm"
+path = "/Users/okanegemen/Desktop/yoloV5/INbreast Release 1.0/AllDICOMs/20586986_6c613a14b80a8591_MG_L_ML_ANON.dcm"
 
-# dicom_img = dicom.dcmread(path)
+dicom_img = dicom.dcmread(path)
 
-# numpy_pixels = dicom_img.pixel_array
-# img = np.resize(numpy_pixels,(600,600))
-# img = np.array(img,dtype="float32")
-
-
-# tensor = torch.from_numpy(img)
-# tensor = tensor.float()
-# tensor = torch.reshape(tensor,[1, 1, 600, 600])
+numpy_pixels = dicom_img.pixel_array
+img = np.resize(numpy_pixels,(600,600))
+img = np.array(img,dtype="float32")
 
 
-# import warnings
+tensor = torch.from_numpy(img)
+tensor = tensor.float()
+tensor = torch.reshape(tensor,[1, 1, 600, 600])
 
-# warnings.filterwarnings("ignore")
+
+import warnings
+
+warnings.filterwarnings("ignore")
 
 
 
@@ -74,6 +74,45 @@ class efficientNet_v2L(nn.Module):
 
 
 
+
+class Resnet34(nn.Module):
+
+    def __init__(self,in_channels,num_classes):
+
+        super(Resnet34,self).__init__()
+
+        model = models.resnet34(pretrained = False)
+
+        modules = [module for module in model.children()]
+
+
+        self.first = nn.Conv2d(in_channels=in_channels,out_channels=64,kernel_size=7,stride=2,padding=3,bias=False)
+        body = modules[1:-1]
+
+        self.body = nn.Sequential(*body)
+
+
+        self.last = nn.Linear(in_features=512,out_features=num_classes)
+
+    def forward(self,input1):
+
+
+        out= self.first(input1)
+        out = self.body(out)
+
+        out = out.view(out.size(0),-1)
+        out = self.last(out)
+
+
+        return out 
+
+
+resnet = Resnet34(1,3)
+
+
+out = resnet(tensor)
+
+print(out)
 
 
 class ResNet101(nn.Module):
@@ -271,40 +310,78 @@ class ConcatModel(nn.Module):
             firstBody = 0
 
 
-
+       
         try:
             if oneOrTwoDim == 1:
 
 
+                if firstBlock[0].bias is not None:
 
 
-                firstBlock[0] = nn.Conv2d(256,
-                                            firstBlock[0].out_channels,
-                                            firstBlock[0].kernel_size,
-                                            firstBlock[0].stride,
-                                            firstBlock[0].padding,
-                                            firstBlock[0].dilation,
-                                            firstBlock[0].groups,
-                                            bias=firstBlock[0].bias)
+                    firstBlock[0] = nn.Conv2d(in_channels = 256,
+                                                out_channels=firstBlock[0].out_channels,
+                                                kernel_size = firstBlock[0].kernel_size,
+                                                stride = firstBlock[0].stride,
+                                                padding =firstBlock[0].padding,
+                                                dilation=firstBlock[0].dilation,
+                                                groups =firstBlock[0].groups,
+                                                bias=True)
+                else:
+                    firstBlock[0] = nn.Conv2d(in_channels = 256,
+                                                out_channels=firstBlock[0].out_channels,
+                                                kernel_size = firstBlock[0].kernel_size,
+                                                stride = firstBlock[0].stride,
+                                                padding =firstBlock[0].padding,
+                                                dilation=firstBlock[0].dilation,
+                                                groups =firstBlock[0].groups,
+                                                bias=False)
 
-            else: 
-                firstBlock[0][0] = nn.Conv2d(256,
-                                                firstBlock[0][0].out_channels,
-                                                firstBlock[0][0].kernel_size,
-                                                firstBlock[0][0].stride,
-                                                firstBlock[0][0].padding,
-                                                firstBlock[0][0].dilation,
-                                                firstBlock[0][0].groups,
-                                                bias=firstBlock[0][0].bias)
+            elif oneOrTwoDim == 2:
+
+
+                if firstBlock[0][0].bias is not None:
+
+                    firstBlock[0][0] = nn.Conv2d(in_channels = 256,
+                                                    out_channels=firstBlock[0][0].out_channels,
+                                                    kernel_size=firstBlock[0][0].kernel_size,
+                                                    stride = firstBlock[0][0].stride,
+                                                    padding = firstBlock[0][0].padding,
+                                                    dilation = firstBlock[0][0].dilation,
+                                                    groups = firstBlock[0][0].groups,
+                                                    bias=True)
+                else:
+                    firstBlock[0][0] = nn.Conv2d(in_channels = 256,
+                                                    out_channels=firstBlock[0][0].out_channels,
+                                                    kernel_size=firstBlock[0][0].kernel_size,
+                                                    stride = firstBlock[0][0].stride,
+                                                    padding = firstBlock[0][0].padding,
+                                                    dilation = firstBlock[0][0].dilation,
+                                                    groups = firstBlock[0][0].groups,
+                                                    bias=False)
+
         except:
-            firstBlock[0].conv = nn.Conv2d(256,
+
+            if firstBlock[0].conv.bias is not None:
+
+
+                firstBlock[0].conv = nn.Conv2d(256,
+                                                firstBlock[0].conv.out_channels,
+                                                firstBlock[0].conv.kernel_size,
+                                                firstBlock[0].conv.stride,
+                                                firstBlock[0].conv.padding,
+                                                firstBlock[0].conv.dilation,
+                                                firstBlock[0].conv.groups,
+                                                bias = True
+                                                )
+            else:
+                firstBlock[0].conv = nn.Conv2d(256,
                                             firstBlock[0].conv.out_channels,
                                             firstBlock[0].conv.kernel_size,
                                             firstBlock[0].conv.stride,
                                             firstBlock[0].conv.padding,
                                             firstBlock[0].conv.dilation,
                                             firstBlock[0].conv.groups,
-                                            firstBlock[0].conv.bias
+                                            bias=False
                                             )
 
 
@@ -381,3 +458,37 @@ class ConcatModel(nn.Module):
 
 
         return {"birads":birads , "acr":composition ,"kadran":kadran}
+
+
+model = models.resnet101()
+
+
+
+# items1 = [module for module in model.children()]
+
+
+# concat = ConcatModel(1,model)
+
+
+# items2 = [module for module in concat.children()]
+
+
+
+
+# file1 = open('item1.txt','w')
+
+# file2 = open("item2.txt","w")
+
+
+# for item1 in items1:
+#     file1.write(str(item1)+"\b")
+
+# for item2 in items2:
+
+#     file2.write(str(item2) + "\b")
+
+
+# file1.close()
+# file2.close()
+
+
