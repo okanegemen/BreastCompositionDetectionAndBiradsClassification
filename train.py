@@ -33,7 +33,7 @@ def get_model():
         # model.conv1.in_channels = config.NUM_CHANNELS
         # model.fc.out_features = config.NUM_CLASSES
 
-        print("Random Weighted Model loaded.")
+        print("Random Weighted ModelS loaded.")
         # print(model)
 
         return model.to(config.DEVICE)

@@ -77,11 +77,11 @@ class efficientNet_v2L(nn.Module):
 
 
 class ResNet101(nn.Module):
-    def __init__(self,in_channels,num_classes) :
+    def __init__(self,in_channels) :
 
         super(ResNet101,self).__init__()
 
-        model = models.resnet101(weights = models.ResNet101_Weights,pretrained = False)
+        model = models.resnet101()
 
         self.first_layer = nn.Sequential(nn.Conv2d(in_channels=in_channels,out_channels=64,kernel_size=7,stride=2,padding=3,bias=False),
                                     nn.BatchNorm2d(64),
@@ -95,7 +95,7 @@ class ResNet101(nn.Module):
 
         self.avg = model.avgpool
 
-        self.fc = nn.Linear(in_features=2048,out_features=num_classes,bias=True)
+        self.fc = nn.Linear(in_features=2048,out_features=3,bias=True)
 
 
 
