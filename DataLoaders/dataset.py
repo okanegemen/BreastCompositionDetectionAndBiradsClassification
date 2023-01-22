@@ -32,12 +32,14 @@ def get_transforms(train=True):
                             # T.RandomHorizontalFlip(0.5),
                             # T.RandomRotation(7*random.random()),
                             T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
+                            T.GaussianBlur(5),
                             T.ToTensor(),
                         ])
     else:
         transform = T.Compose([
                             T.ToPILImage(),
                             T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
+                            T.GaussianBlur(5),
                             T.ToTensor(),
                         ])
     return transform
@@ -83,7 +85,7 @@ class Dataset(datasets.VisionDataset):
             images[name] = self.transform(image)
             # print(images[name].max())
             # T.ToPILImage()(images[name]).show()
-            # time.sleep(5)
+            # time.sleep(1)
         images = {key:image for key,image in images.items()}
 
         image = torch.stack([image.squeeze() for image in images.values()])
@@ -110,6 +112,9 @@ class Dataset(datasets.VisionDataset):
         return folder_names
 
     def eliminate_unused_dicoms(self,dicom_folders:dict,dataset:pd.DataFrame):
+        if config.ELIMINATE_CORRUPTED_PATIENTS and self.train_transform:
+            dataset = dataset[~dataset["HASTANO"].isin(hastano_from_txt())]
+
         dataset = dataset[dataset["HASTANO"].isin(dicom_folders)]
         return dataset
 
@@ -146,10 +151,17 @@ class Dataset(datasets.VisionDataset):
     def __str__(self):
         return str(self.dataset)
 
+
+def hastano_from_txt(txt_path = os.path.join(config.MAIN_DIR,"yoloV5","others","kirli_resimler.txt")):
+    with open(txt_path) as text_file:
+        lines = text_file.readlines()
+    dcm_folders = [line.split("\t")[0].strip() for line in lines]
+    return dcm_folders
+
 if __name__=="__main__":
     train, test= XLS().return_datasets()
 
     train = Dataset(train,True)
     test = Dataset(test,False)
 
-    print(train[0])
+    print(train[3])
