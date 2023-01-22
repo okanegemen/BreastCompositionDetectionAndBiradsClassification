@@ -22,25 +22,35 @@ import scipy.ndimage as ndi
 import random
 import cv2
 import time
-def rand_prob():
-    return 0.5*random.random()
 
 def get_transforms(train=True):
     if train:
-        transform = T.Compose([
+        transform = torch.nn.Sequential(
+                            # T.RandomAffine(7),
+                            # T.RandomErasing(scale=(0.02,0.1)),
+                            # T.RandomInvert(),
+                            T.RandomAutocontrast(),
+                            T.RandomSolarize(0.3),
+                            # T.RandomPerspective(0.2),
+                        ).to(config.DEVICE)
+        transform_cpu = T.Compose([
                             T.ToPILImage(),
-                            # T.RandomHorizontalFlip(0.5),
-                            # T.RandomRotation(7*random.random()),
+                            # T.RandomRotation(10,expand=True),
                             T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
+                            T.RandomCrop((int(config.INPUT_IMAGE_HEIGHT*config.CROP_RATIO),int(config.INPUT_IMAGE_WIDTH*config.CROP_RATIO))),
+                            T.GaussianBlur(5),
                             T.ToTensor(),
-                        ])
+        ])
     else:
         transform = T.Compose([
                             T.ToPILImage(),
                             T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
+                            T.CenterCrop((int(config.INPUT_IMAGE_HEIGHT*config.CROP_RATIO),int(config.INPUT_IMAGE_WIDTH*config.CROP_RATIO))),
+                            T.GaussianBlur(5),
                             T.ToTensor(),
                         ])
-    return transform
+        transform_cpu = None
+    return transform,transform_cpu
 
 
 class Dataset(datasets.VisionDataset):
@@ -56,12 +66,11 @@ class Dataset(datasets.VisionDataset):
 
         self.dataset = dataset
         self.dataset_name = config.TEKNOFEST
-        self.transform = get_transforms(train_transform)
+        self.transform,self.transform_cpu = get_transforms(train_transform)
 
         self.dicom_paths = self.dicom_paths_func()
         self.dataset = self.eliminate_unused_dicoms(self.dicom_paths,self.dataset) # eliminates rows in dataframe of dataset which are not in the image directory, deleted or moved
         categories = self.dataset["BIRADS KATEGORİSİ"].to_list()
-
         self.ids = [x for x in list(categories)]
 
         class_weights = get_class_weights(self.ids)
@@ -74,29 +83,44 @@ class Dataset(datasets.VisionDataset):
         images = self.loadImg(dicti["HASTANO"])
 
         birads = torch.tensor(dicti["BIRADS KATEGORİSİ"],dtype=torch.int64)
-        acr = torch.tensor(dicti["MEME KOMPOZİSYONU"])
+        # acr = torch.tensor(dicti["MEME KOMPOZİSYONU"])
         # kadran_r = torch.tensor(dicti["KADRAN BİLGİSİ (SAĞ)"])
         # kadran_l = torch.tensor(dicti["KADRAN BİLGİSİ (SOL)"])
 
         for name,image in images.items():
             image = torch.from_numpy(image).float().unsqueeze(0)
+
             images[name] = self.transform(image)
-            # print(images[name].max())
-            # T.ToPILImage()(images[name]).show()
-            # time.sleep(5)
+            if self.train_transform:
+                images[name] = self.transform_cpu(images[name].to("cpu"))
+            # images[name][images[name]>0.9] = 0.
+            # images[name][images[name]<0.1] = 0.
+
         images = {key:image for key,image in images.items()}
 
-        image = torch.stack([image.squeeze() for image in images.values()])
-        target = {
-            "birads":birads,
-            "acr":acr
-            # "kadran_r":kadran_r,
-            # "kadran_l":kadran_l,
-            # "names":images.keys()
-        }
-        return  image,birads
-    
+        image = torch.stack([image.squeeze() for image in images.values()]).to(config.DEVICE)
+        image = self.norm(None).to(config.DEVICE)(image) # mean = image.mean(dim=(1,2)
 
+        # for img in image:
+        #     T.ToPILImage()(img).show()
+        #     time.sleep(1)
+        # target = {
+        #     "birads":birads,
+        #     "acr":acr
+        #     "kadran_r":kadran_r,
+        #     "kadran_l":kadran_l,
+        #     "names":images.keys()
+        # }
+        return  image,birads
+    def norm(self,mean:torch.tensor):
+        if mean == None:
+            Norm = T.Normalize([0.8579, 0.8336, 0.8585, 0.8324], [0.1386, 0.1739, 0.1390, 0.1765])
+        else:
+            if ((mean<0.5).sum()<=2):
+                Norm =  T.Normalize([0.9254, 0.8955, 0.9262, 0.8941], [0.1313, 0.1677, 0.1318, 0.1705])
+            else:
+                Norm = T.Normalize([0.1380, 0.1739, 0.1371, 0.1742], [0.2167, 0.2403, 0.2163, 0.2398])
+        return torch.nn.Sequential(Norm).to(config.DEVICE)
     def loadImg(self,hastano):
         images = {}
         for dcm in self.dcm_names:
@@ -110,6 +134,8 @@ class Dataset(datasets.VisionDataset):
         return folder_names
 
     def eliminate_unused_dicoms(self,dicom_folders:dict,dataset:pd.DataFrame):
+        if config.ELIMINATE_CORRUPTED_PATIENTS and self.train_transform:
+            dataset = dataset[~dataset["HASTANO"].isin(hastano_from_txt())]
         dataset = dataset[dataset["HASTANO"].isin(dicom_folders)]
         return dataset
 
@@ -146,10 +172,20 @@ class Dataset(datasets.VisionDataset):
     def __str__(self):
         return str(self.dataset)
 
+
+def hastano_from_txt(txt_path = os.path.join(config.MAIN_DIR,"yoloV5","others","kirli_resimler.txt")):
+    with open(txt_path) as text_file:
+        lines = text_file.readlines()
+    dcm_folders = [line.split("\t")[0].strip() for line in lines]
+    return dcm_folders
+
 if __name__=="__main__":
     train, test= XLS().return_datasets()
 
     train = Dataset(train,True)
     test = Dataset(test,False)
+    print(len(train))
+    print(len(test))
 
-    print(train[0])
+    for i in range(20):
+        print(train[i])

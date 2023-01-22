@@ -1,9 +1,8 @@
-import torch,torchvision
+import torch
 import os
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Device: {DEVICE}")
-print(torch.__version__)
 
 MAIN_DIR = "/home/alican/Documents/"
 DATASET_DIR = os.path.join(MAIN_DIR,"Datasets/")
@@ -24,7 +23,7 @@ NUM_LEVELS = 1
 
 INIT_LR = 0.0001
 NUM_EPOCHS = 10
-BATCH_SIZE = 128
+BATCH_SIZE = 32
 
 L1regularization = False
 L2regularization = False
@@ -32,9 +31,8 @@ L2regularization = False
 SAVE_MODEL_PER_EPOCH = 10
 VALIDATE_PER_EPOCH = 4
 
-INPUT_IMAGE_WIDTH = 80 # yatay
-INPUT_IMAGE_HEIGHT = 100 # dikey
-CROP_RATIO = 0.9
+INPUT_IMAGE_WIDTH = 400 # yatay
+INPUT_IMAGE_HEIGHT = 500 # dikey
 
 PRINT_FREQ = None
 

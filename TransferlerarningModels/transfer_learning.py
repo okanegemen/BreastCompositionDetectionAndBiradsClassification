@@ -31,12 +31,12 @@ import pydicom as dicom
 
 
 class efficientNet_v2L(nn.Module):
-    def __init__(self,in_channels,num_classes):
+    def __init__(self,in_channels):
         super(efficientNet_v2L,self).__init__()
 
         self.in_channels = in_channels
-        self.num_classes = num_classes
-        self.model = models.efficientnet_v2_l(weights = models.EfficientNet_V2_L_Weights,pretrained = False)
+        self.num_classes = 3
+        self.model = models.ef()
         self.First= nn.Sequential(nn.Conv2d(self.in_channels, 32, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False),
 
                                         nn.BatchNorm2d(32, eps=0.001, momentum=0.1, affine=True, track_running_stats=True),
@@ -46,7 +46,7 @@ class efficientNet_v2L(nn.Module):
         
         self.classifier = nn.Sequential(nn.Dropout(p=0.4,inplace=True),
 
-                                            nn.Linear(in_features=1280,out_features=num_classes))
+                                            nn.Linear(in_features=1280,out_features=self.num_classes))
 
 
         self.avg = nn.AdaptiveAvgPool2d(1)

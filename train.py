@@ -1,5 +1,5 @@
 from DataLoaders.dataset import Dataset
-from TransferlerarningModels.transfer_learning import ResNet101 as load_model
+from TransferlerarningModels.transfer_learning import efficientNet_v2L as load_model
 from DataLoaders.XLS_utils import XLS
 # from Pytorch_model.unet import UNet as load_model
 # from ConnectedSegnet.connectedSegnet_model import ConSegnetsModel as load_model
@@ -33,7 +33,7 @@ def get_model():
         # model.conv1.in_channels = config.NUM_CHANNELS
         # model.fc.out_features = config.NUM_CLASSES
 
-        print("Random Weighted Model loaded.")
+        print("Random Weighted ModelS loaded.")
         # print(model)
 
         return model.to(config.DEVICE)
