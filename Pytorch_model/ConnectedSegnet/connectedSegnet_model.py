@@ -1,12 +1,14 @@
-from connectedSegnet_elements import *
+from .connectedSegnet_elements import *
 import torch
 import torch.nn as nn
+import torch.functional as F
 
 
 
 class ConSegnetsModel(nn.Module):
-    def __init__(self,in_channels):
+    def __init__(self,in_channels,n_classes):
         super(ConSegnetsModel,self).__init__()
+        
         # ###############################
         # First Segnet Encoder Part
         # ###############################
@@ -46,8 +48,15 @@ class ConSegnetsModel(nn.Module):
         self.secondDecoder3 = TripleConv(256,128)
         self.secondDecoder4 = DoubleConv(128,64)
         self.secondDecoder5 = DoubleConv(64,64)
-
-        
+        self.outconv=nn.Conv2d(64,1,kernel_size=1)
+        self.avg = nn.AdaptiveAvgPool2d((1,1))
+        self.fc1 = nn.Linear(64,32)
+        self.relu1 = nn.ReLU(True)
+        self.fc2 = nn.Linear(32,16)
+        self.relu2 = nn.ReLU(True)
+        self.fc3 = nn.Linear(16,n_classes)
+        self.soft_max = nn.LogSoftmax(dim=1)
+       
         
         self.dilation = dilationConv(64,64)
         self.conv1x1 = conv1x1(in_channels=64,out_channels=1)
@@ -146,7 +155,52 @@ class ConSegnetsModel(nn.Module):
         sec_dec_out5 = unmaxpooling(sec_dec_out4,maxpool_indices=indices_sec_1,dim=dec_d5)
         sec_dec_out5=self.secondDecoder5(sec_dec_out5)
         sec_dec_d5 = sec_dec_out5.size()
-        dilation_out= self.dilation(sec_dec_out5)
-        out = self.conv1x1(dilation_out)
+
+        # dilation_out= self.dilation(sec_dec_out5)
+        # out1 = self.conv1x1(dilation_out)
+
+        sec_dec_out5 = self.avg(sec_dec_out5)
+        sec_dec_out5 = sec_dec_out5.view(sec_dec_out5.size(0),-1)
         
-        return out
+        out2 = self.fc1(sec_dec_out5)
+        out2 = self.relu1(out2)
+        out2 = self.fc2(out2)
+        out2 = self.relu2(out2)
+        out2 = self.fc3(out2)
+        out2 = self.soft_max(out2)
+
+        return out2
+
+
+
+
+# if __name__== "__main__":
+
+#     from linear_block import *
+#     import torchvision.transforms as T
+#     from PIL import Image
+#     import cv2 as cv
+#     import numpy as np
+#     import pydicom as dicom 
+
+#     path = "/Users/okanegemen/yoloV5/INbreast Release 1.0/AllDICOMs/20586908_6c613a14b80a8591_MG_R_CC_ANON.dcm"
+
+#     dicom_img = dicom.dcmread(path)
+
+#     numpy_pixels = dicom_img.pixel_array
+#     img = np.resize(numpy_pixels,(600,600))
+#     img = np.array(img,dtype="float32")
+
+
+
+#     tensor = torch.from_numpy(img)
+#     tensor = tensor.float()
+#     tensor = torch.reshape(tensor,[1,1,600,600])
+#     #tensor = torch.view_as_real(tensor)
+
+
+    
+#     print(output2.size())
+#     print(torch.max(output2))
+#     print(torch.argmax(output2))
+

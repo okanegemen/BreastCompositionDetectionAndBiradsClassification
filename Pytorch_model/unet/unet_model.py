@@ -21,7 +21,13 @@ class UNet(nn.Module):
         self.up2 = Up(512, 256 // factor, bilinear)
         self.up3 = Up(256, 128 // factor, bilinear)
         self.up4 = Up(128, 64, bilinear)
-        self.outc = OutConv(64, n_classes)
+        # self.outc = OutConv(64, n_classes)
+        self.adp = nn.AdaptiveAvgPool2d(1)
+        self.fc1 = nn.Linear(64,32)
+        self.relu = nn.ReLU(False)
+        self.fc2 = nn.Linear(32,n_classes)
+        self.soft_max = nn.LogSoftmax(dim = 1)
+
 
     def forward(self, x):
         x1 = self.inc(x)
@@ -33,5 +39,16 @@ class UNet(nn.Module):
         x = self.up2(x, x3)
         x = self.up3(x, x2)
         x = self.up4(x, x1)
-        logits = self.outc(x)
-        return logits
+        # logits = self.outc(x)
+        x = self.adp(x)
+        x = x.view(x.size(0),-1)
+        x = self.fc1(x)
+        x = self.relu(x)
+        x = self.fc2(x)
+        x = self.soft_max(x)
+        return x
+
+
+
+
+
