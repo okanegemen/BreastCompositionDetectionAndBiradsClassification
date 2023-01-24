@@ -3,11 +3,19 @@ from PIL import Image,ImageOps
 import os
 import numpy as np
 from skimage import exposure
+import config
+import torchvision.transforms as T
 import time
+import torch
 
 MAIN_DIR = "/home/alican/Documents/"
 DATASET_DIR = os.path.join(MAIN_DIR,"Datasets/")
 TEKNOFEST = os.path.join(DATASET_DIR,"TEKNOFEST_MG_EGITIM_1")
+
+transform = T.Compose([
+                    T.ToPILImage(),
+                    T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
+                ])
 
 def image_histogram_equalization(image, number_bins=256):
     # from http://www.janeriksolem.net/histogram-equalization-with-python-and.html
@@ -23,13 +31,11 @@ def image_histogram_equalization(image, number_bins=256):
     return image_equalized.reshape(image.shape), cdf
 
 def dicom_open(path):
-    name = pydicom.data.data_manager.get_files(TEKNOFEST,path)[0]
-    
-    ds = pydicom.dcmread(name)
-    img = ds.pixel_array
-    img = np.array(img).astype(np.float64)
-    print(img.max())
-    return (img-img.min())/img.max()
+    path = os.path.join(config.TEKNOFEST,path)
+    dicom_img = pydicom.dcmread(path)
+    numpy_pixels = dicom_img.pixel_array
+    img = np.array(numpy_pixels,dtype="float32")
+    return img/np.max(img)
 
 def get_concat_h(im1, im2):
     dst = Image.new('RGB', (im1.width + im2.width, im1.height))
@@ -43,16 +49,15 @@ def get_concat_v(im1, im2):
     dst.paste(im2, (0, im1.height))
     return dst
 
-def four_image_show(hastano,w = 120,h = 150):
+def four_image_show(hastano,w = config.INPUT_IMAGE_HEIGHT,h = config.INPUT_IMAGE_WIDTH):
     dcm_names = ["LMLO","LCC","RMLO","RCC"]
     images = []
-
+    
     for dcm in dcm_names:
         image = dicom_open(os.path.join(str(hastano),dcm+".dcm"))
-        image = Image.fromarray(image*255)
-        image = image.convert('L')
-        image = image.resize([w,h],Image.Resampling.LANCZOS)
+        image = transform(torch.from_numpy(image).float().unsqueeze(0))
         images.append(image)
+
     a = get_concat_v(images[0],images[1])
     b = get_concat_v(images[2],images[3])
 
@@ -89,4 +94,4 @@ def four_concat(dcm_folders, dcm_names = ["LMLO","LCC","RMLO","RCC"]):
         c.show()
         time.sleep(1)
 if __name__ == "__main__":
-    four_image_show(845285991,w = 1000,h=1250)
+    four_image_show(845284117)

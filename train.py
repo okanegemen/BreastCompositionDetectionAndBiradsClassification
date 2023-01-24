@@ -1,7 +1,7 @@
 from DataLoaders.dataset import Dataset
-from TransferlerarningModels.transfer_learning import Resnet50 as load_model
+from TransferlerarningModels.transfer_learning import Resnet34 as load_model
 from DataLoaders.XLS_utils import XLS
-# from Pytorch_model.unet import UNet as load_model
+from Pytorch_model.unet import UNet as load_model
 # from ConnectedSegnet.connectedSegnet_model import ConSegnetsModel as load_model
 import DataLoaders.config as config
 import math
@@ -9,11 +9,10 @@ import sys
 import os
 from torch.nn import CrossEntropyLoss as Loss
 from torch.optim import Adam
-from torch.utils.data import DataLoader,SubsetRandomSampler
+from torch.utils.data import DataLoader
 from torchvision import transforms
 import matplotlib.pyplot as plt
 import torch
-import random
 import time
 from qqdm import qqdm, format_str
 from DataLoaders.scores import scores
@@ -27,35 +26,26 @@ def collate_fn(batch):
 
 def get_model():
     if config.LOAD_NEW_MODEL:
+        # kwargs = dict({"num_classes":config.NUM_CLASSES})
         model = load_model(4)
-        # for param in model.parameters():
-        #     param.requires_grad_(True)
-
-        # for name,param in model.named_parameters():
-        #     print(name,param.requires_grad)
         
+        # model.conv1.in_channels = config.NUM_CHANNELS
+        # model.fc.out_features = config.NUM_CLASSES
 
-        # model.classifier[-1] = torch.nn.Linear(4096,config.NUM_CLASSES)
-    
-        # for name,param in model.named_parameters():
-        #     print(name,param.requires_grad)
-
-        print("Random Weighted Model loaded.")
+        print("Random Weighted ModelS loaded.")
+        # print(model)
 
         return model.to(config.DEVICE)
     else:
-        kwargs = dict({"num_classes":config.NUM_CLASSES})
-        model = load_model(pretrained=False,progress=True,**kwargs)
+        model = load_model(4)
         print("############# Previous weights loaded. ###################")
         model.load_state_dict(torch.load(config.MODEL_PATH))
         
         # print(model.classifier)
         # model.classifier = torch.nn.Linear(1024,config.NUM_CLASSES)
 
-        # print(model)
-
-        for name,param in model.named_parameters():
-            print(name,param.requires_grad)
+        # for name,param in model.named_parameters():
+        #     print(name,param.requires_grad)
 
         return model.to(config.DEVICE)
 
@@ -66,12 +56,6 @@ def get_dataset():
     test = Dataset(test,False)
 
     return train, test
-
-def get_dataloaders(train_valDS,train_sampler,val_sampler):
-    trainLoader = DataLoader(train_valDS,sampler=train_sampler, shuffle=False, batch_size=config.BATCH_SIZE, num_workers=0,collate_fn=collate_fn)
-    valLoader = DataLoader(train_valDS,sampler=val_sampler, shuffle=False, batch_size=config.BATCH_SIZE, num_workers=0,collate_fn=collate_fn)
-
-    return trainLoader, valLoader
 
 def get_others(model):
 
@@ -96,11 +80,11 @@ def plot(H):
 
 def training(model, trainLoader, lossFunc, optimizer, valLoader,fold):
     metrics = {"train":[],"val":[]}
+
     # loop over epochs
     print("[INFO] training the network...")
     for epoch in range(config.NUM_EPOCHS):
         scores_train = scores()
-
         # set the model in training mode
         model.train()
 
@@ -109,11 +93,13 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader,fold):
         #     warmup_factor = 1.0 / 1000
         #     warmup_iters = min(1000, len(trainLoader) - 1)
 
-        #     lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        #         optimizer,mode="min",
-        #     )        
+        #     lr_scheduler = torch.optim.lr_scheduler.LinearLR(
+        #     optimizer, start_factor=warmup_factor, total_iters=warmup_iters
+        #     )
+        
 
         # loop over the training set
+
         train_loss = []
         for idx_t,traindata in enumerate(tw :=qqdm(trainLoader, desc=format_str('bold', 'Description'))):
             images,targets = traindata
@@ -121,7 +107,7 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader,fold):
             images, targets = torch.stack(images).to(config.DEVICE), torch.stack(targets).view(-1).to(config.DEVICE)
 
             with torch.cuda.amp.autocast():
-                outputs = model(images)["birads"]
+                outputs = model(images)
                 loss_train = lossFunc(outputs,targets)
             
             optimizer.zero_grad()
@@ -147,23 +133,15 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader,fold):
                 lr_scheduler.step()
         
         n_threads = torch.get_num_threads()
-
-        metrics["train"].append(scores_train.metric)
-
+        
         if epoch % config.VALIDATE_PER_EPOCH == 0 and (epoch != 0 or config.VALIDATE_PER_EPOCH == 1):
-            print(f'Validation')
-            print('--------------------------------')
-            scores_val = scores()
+            scores_test = scores()
             # set the model in evaluation mode
             model.eval()
             # loop over the validation set
-
             val_loss = []
 
             # switch off autograd
-
-
-
             with torch.no_grad():
                 for idx_v, valData in enumerate(tw :=qqdm(valLoader, desc=format_str('bold', 'Description'))):
                     images, targets = valData
@@ -172,22 +150,20 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader,fold):
                     images, targets = torch.stack(images).to(config.DEVICE), torch.stack(targets).view(-1).to(config.DEVICE)
                     if torch.cuda.is_available():
                         torch.cuda.synchronize()
-                    outputs = model(images)["birads"]
+                    outputs = model(images)
                     loss_val = lossFunc(outputs,targets)
 
                     val_loss.append(loss_val.item())
                     temp_loss = sum(val_loss[-20:]) / min([len(val_loss),20])
 
 
-                    scores_val.update(outputs,targets)
+                    scores_test.update(outputs,targets)
                     tw.set_infos({"loss":"%.4f"%temp_loss,
-                                **scores_val.metrics()})
-
-                metrics["val"].append(scores_val.metric)
+                                **scores_test.metrics()})
 
         if (epoch % config.SAVE_MODEL_PER_EPOCH == 0 and (epoch != 0 or config.VALIDATE_PER_EPOCH == 1)) or epoch == config.NUM_EPOCHS-1:
             print("/nSaving Model State Dict...")
-            torch.save(model.state_dict(), config.MODEL_PATH+str(epoch)+str(fold)+".pth")
+            torch.save(model.state_dict(), config.MODEL_PATH.strip(".pth")+"_fold"+str(fold)+"_epoch"+str(epoch)+".pth")
 
         # accumulate predictions from all images
         torch.set_num_threads(n_threads)
@@ -205,10 +181,24 @@ def save_model_and_metrics(model,fold_metrics):
     f.write(jso)
     f.close()
     
+
+def get_dataloaders(train_valDS,train_sampler,val_sampler):
+    trainLoader = DataLoader(train_valDS,sampler=train_sampler, shuffle=False, batch_size=config.BATCH_SIZE, num_workers=0,collate_fn=collate_fn)
+    valLoader = DataLoader(train_valDS,sampler=val_sampler, shuffle=False, batch_size=config.BATCH_SIZE, num_workers=0,collate_fn=collate_fn)
+
+    return trainLoader, valLoader
+    
 def base():
 
-    train_valDS, testDS = get_dataset()
+    trainDS, valDS = get_dataset()
+
+    print(f"[INFO] found {len(trainDS)} examples in the training set...")
+    print(f"[INFO] found {len(valDS)} examples in the val set...")
+
+    trainLoader, valLoader = get_dataloaders(trainDS, valDS)
+
     model = get_model()
+
     lossFunc, opt= get_others(model)
 
     print(f"[INFO] found {len(train_valDS)} examples in the training set...")

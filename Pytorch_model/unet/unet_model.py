@@ -2,8 +2,6 @@
 
 from .unet_parts import *
 
-up = nn.ConvTranspose2d(1024, 512, kernel_size=2, stride=2)
-conv = DoubleConv(1024, 512)
 class UNet(nn.Module):
     def __init__(self, n_channels, n_classes, bilinear=False):
         super(UNet, self).__init__()
@@ -24,7 +22,7 @@ class UNet(nn.Module):
         # self.outc = OutConv(64, n_classes)
         self.adp = nn.AdaptiveAvgPool2d(1)
         self.fc1 = nn.Linear(64,32)
-        self.relu = nn.ReLU(False)
+        self.silu = nn.SiLU(False)
         self.fc2 = nn.Linear(32,n_classes)
         self.soft_max = nn.LogSoftmax(dim = 1)
 
@@ -43,7 +41,7 @@ class UNet(nn.Module):
         x = self.adp(x)
         x = x.view(x.size(0),-1)
         x = self.fc1(x)
-        x = self.relu(x)
+        x = self.silu(x)
         x = self.fc2(x)
         x = self.soft_max(x)
         return x
