@@ -94,4 +94,4 @@ def four_concat(dcm_folders, dcm_names = ["LMLO","LCC","RMLO","RCC"]):
         c.show()
         time.sleep(1)
 if __name__ == "__main__":
-    four_image_show(822688597)
+    four_image_show(845284117)

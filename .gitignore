@@ -6,4 +6,7 @@ output/
 .DS_Store
 .python-version
 .vscode
+results_models/
+output/
 try.py
+__pycache__/

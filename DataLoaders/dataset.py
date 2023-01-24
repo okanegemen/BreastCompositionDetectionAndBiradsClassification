@@ -7,7 +7,12 @@ else:
     from .XLS_utils import XLS 
     from .utils import get_class_weights,get_sampler
     import DataLoaders.config as config
+    import DataLoaders.fiximage as fiximage
 
+
+# from XLS_utils import XLS 
+# from utils import get_class_weights,get_sampler
+# import config
 import torch
 import pandas as pd
 from torchvision import datasets
@@ -22,18 +27,21 @@ import scipy.ndimage as ndi
 import random
 import cv2
 import time
+import imutils
 
 def get_transforms(train=True):
     if train:
         transform = torch.nn.Sequential(
                             # T.RandomAffine(7),
-                            # T.RandomErasing(scale=(0.02,0.05)),
+                            T.RandomErasing(scale=(0.02,0.02)),
                             # T.RandomInvert(),
-                            T.RandomAutocontrast(p=1.),
+                            T.RandomAutocontrast(1.0),
+                            # T.RandomSolarize(0.3),
                             # T.RandomPerspective(0.2),
                         ).to(config.DEVICE)
         transform_cpu = T.Compose([
                             T.ToPILImage(),
+                            T.Pad((5,5,5,5)),
                             # T.RandomRotation(10,expand=True),
                             T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
                             T.RandomCrop((int(config.INPUT_IMAGE_HEIGHT*config.CROP_RATIO),int(config.INPUT_IMAGE_WIDTH*config.CROP_RATIO))),
@@ -43,6 +51,7 @@ def get_transforms(train=True):
     else:
         transform = T.Compose([
                             T.ToPILImage(),
+                            T.Pad((5,5,5,5)),
                             T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
                             T.CenterCrop((int(config.INPUT_IMAGE_HEIGHT*config.CROP_RATIO),int(config.INPUT_IMAGE_WIDTH*config.CROP_RATIO))),
                             T.GaussianBlur(5),
@@ -92,13 +101,12 @@ class Dataset(datasets.VisionDataset):
             images[name] = self.transform(image)
             if self.train_transform:
                 images[name] = self.transform_cpu(images[name].to("cpu"))
-            # images[name][images[name]>0.9] = 0.
-            # images[name][images[name]<0.1] = 0.
 
         images = {key:image for key,image in images.items()}
 
         image = torch.stack([image.squeeze() for image in images.values()]).to(config.DEVICE)
-        image = self.norm(None).to(config.DEVICE)(image) # mean = image.mean(dim=(1,2)
+        if config.NORMALIZE:
+            image = self.norm()(image) # mean = image.mean(dim=(1,2)
 
         # for img in image:
         #     T.ToPILImage()(img).show()
@@ -111,19 +119,28 @@ class Dataset(datasets.VisionDataset):
         #     "names":images.keys()
         # }
         return  image,birads
-    def norm(self,mean:torch.tensor):
-        if mean == None:
-            Norm = T.Normalize([0.8579, 0.8336, 0.8585, 0.8324], [0.1386, 0.1739, 0.1390, 0.1765])
-        else:
-            if ((mean<0.5).sum()<=2):
-                Norm =  T.Normalize([0.9254, 0.8955, 0.9262, 0.8941], [0.1313, 0.1677, 0.1318, 0.1705])
-            else:
-                Norm = T.Normalize([0.1380, 0.1739, 0.1371, 0.1742], [0.2167, 0.2403, 0.2163, 0.2398])
+
+    def norm(self):
+        Norm = T.Normalize([0.1846, 0.1545, 0.1837, 0.1523], [0.2831, 0.2638, 0.2830, 0.2616])
         return torch.nn.Sequential(Norm).to(config.DEVICE)
+
     def loadImg(self,hastano):
         images = {}
         for dcm in self.dcm_names:
             image = self.dicom_open(hastano,dcm)
+            image = fiximage.fit_image(image)
+            image = imutils.resize(image,height = config.INPUT_IMAGE_HEIGHT)
+            h,w = image.shape
+            if list(dcm)[0] == "R":
+                try:
+                    image = np.pad(image, ((0, 0), (h-w,0)), 'constant')
+                except:
+                    pass # image = image[:,w-h:]
+            else:
+                try:
+                    image = np.pad(image, ((0, 0), (0,h-w)), 'constant')
+                except:
+                    pass
             images[dcm] = image
 
         return images
@@ -142,8 +159,8 @@ class Dataset(datasets.VisionDataset):
         path = os.path.join(config.TEKNOFEST,hastano,dcm+".dcm")
         dicom_img = pydicom.dcmread(path)
         numpy_pixels = dicom_img.pixel_array
-        img = np.array(numpy_pixels,dtype="float32")
-        return img/np.max(img)
+        numpy_pixels = imutils.resize(numpy_pixels,height=config.INPUT_IMAGE_HEIGHT*3)
+        return numpy_pixels
 
     @classmethod
     def kadran_to_bool(cls, kadranlar:list, choices = ["ÜST DIŞ","ÜST İÇ","ALT İÇ","ALT DIŞ", "MERKEZ"]):
@@ -187,4 +204,4 @@ if __name__=="__main__":
     print(len(test))
 
     for i in range(20):
-        print(train[i])
+        train[i]

@@ -7,7 +7,7 @@ import torch
 import time
 from XLS_utils import XLS 
 import config
-from others.dataset import Dataset
+from dataset import Dataset
 
 dcm_names = ["LCC","LMLO","RCC","RMLO"]
 

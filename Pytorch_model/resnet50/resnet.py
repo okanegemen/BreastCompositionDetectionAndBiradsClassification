@@ -148,5 +148,10 @@ class ResNet50(nn.Module):
         out = out.view(out.size(0),-1)
         out = self.fc1(out)
         return out
+
+
+
+
+
         
         
