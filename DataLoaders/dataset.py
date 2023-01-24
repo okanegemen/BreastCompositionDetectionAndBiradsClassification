@@ -1,16 +1,18 @@
-# if __name__ == "__main__":    
-#     from XLS_utils import XLS 
-#     from utils import get_class_weights,get_sampler
-#     import config
+if __name__ == "__main__":    
+    from XLS_utils import XLS 
+    from utils import get_class_weights,get_sampler
+    import config
     
-# else:
-#     from .XLS_utils import XLS 
-#     from .utils import get_class_weights,get_sampler
-#     import DataLoaders.config as config
+else:
+    from .XLS_utils import XLS 
+    from .utils import get_class_weights,get_sampler
+    import DataLoaders.config as config
+    import DataLoaders.fiximage as fiximage
 
-from XLS_utils import XLS 
-from utils import get_class_weights,get_sampler
-import config
+
+# from XLS_utils import XLS 
+# from utils import get_class_weights,get_sampler
+# import config
 import torch
 import pandas as pd
 from torchvision import datasets
@@ -25,7 +27,6 @@ import scipy.ndimage as ndi
 import random
 import cv2
 import time
-import fiximage
 import imutils
 
 def get_transforms(train=True):
@@ -119,7 +120,7 @@ class Dataset(datasets.VisionDataset):
         # }
         return  image,birads
 
-    def norm(self,mean:torch.tensor):
+    def norm(self):
         Norm = T.Normalize([0.1846, 0.1545, 0.1837, 0.1523], [0.2831, 0.2638, 0.2830, 0.2616])
         return torch.nn.Sequential(Norm).to(config.DEVICE)
 
