@@ -30,18 +30,20 @@ import time
 import imutils
 
 def get_transforms(train=True):
+    p = config.PAD_PIXELS
     if train:
         transform = torch.nn.Sequential(
-                            # T.RandomAffine(7),
                             T.RandomErasing(scale=(0.02,0.02)),
                             # T.RandomInvert(),
+                            T.RandomAffine(5),
+                            # T.LinearTransformation(),
                             T.RandomAutocontrast(1.0),
                             # T.RandomSolarize(0.3),
                             # T.RandomPerspective(0.2),
                         ).to(config.DEVICE)
         transform_cpu = T.Compose([
                             T.ToPILImage(),
-                            T.Pad((5,5,5,5)),
+                            T.Pad((p,p,p,p)),
                             # T.RandomRotation(10,expand=True),
                             T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
                             T.RandomCrop((int(config.INPUT_IMAGE_HEIGHT*config.CROP_RATIO),int(config.INPUT_IMAGE_WIDTH*config.CROP_RATIO))),
