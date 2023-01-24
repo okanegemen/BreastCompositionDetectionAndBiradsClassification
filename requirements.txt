@@ -1,4 +1,3 @@
-torch torchvision torchaudio
 pydicom
 matplotlib
 xml-python
@@ -7,4 +6,8 @@ opencv-python
 xlrd
 Pillow
 pandas
+scipy
+tqdm
+qqdm
+openpyxl==3.0.10
 torchmetrics

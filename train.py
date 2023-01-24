@@ -1,6 +1,7 @@
 from DataLoaders.dataset import Dataset
+from TransferlerarningModels.transfer_learning import Resnet34 as load_model
 from DataLoaders.XLS_utils import XLS
-from Pytorch_model.unet import UNet as load_model
+# from Pytorch_model.unet import UNet as load_model
 # from ConnectedSegnet.connectedSegnet_model import ConSegnetsModel as load_model
 import DataLoaders.config as config
 import math
@@ -8,43 +9,54 @@ import sys
 import os
 from torch.nn import CrossEntropyLoss as Loss
 from torch.optim import Adam
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader,SubsetRandomSampler
 from torchvision import transforms
 import matplotlib.pyplot as plt
 import torch
+import random
 import time
 from qqdm import qqdm, format_str
 from DataLoaders.scores import scores
+import numpy 
+from sklearn.model_selection import KFold
+from test import testing
+import json
 
 def collate_fn(batch):
     return tuple(zip(*batch))
 
 def get_model():
     if config.LOAD_NEW_MODEL:
-        model = load_model(config.NUM_CHANNELS,config.NUM_CLASSES).to(config.DEVICE)
-        print("Random Weighted Model loaded.")
-        return model
+        # kwargs = dict({"num_classes":config.NUM_CLASSES})
+        model = load_model(4)
+        
+        # model.conv1.in_channels = config.NUM_CHANNELS
+        # model.fc.out_features = config.NUM_CLASSES
+
+        print("Random Weighted ModelS loaded.")
+        # print(model)
+
+        return model.to(config.DEVICE)
     else:
-        model = load_model(config.NUM_CHANNELS,config.NUM_CLASSES).to(config.DEVICE)
-        model.load_state_dict(torch.load(os.path.join(config.LOAD_MODEL_DIR,"model.pth")))
+        model = load_model(4)
         print("############# Previous weights loaded. ###################")
-        return model
+        model.load_state_dict(torch.load(config.MODEL_PATH))
+        
+        # print(model.classifier)
+        # model.classifier = torch.nn.Linear(1024,config.NUM_CLASSES)
+
+        # for name,param in model.named_parameters():
+        #     print(name,param.requires_grad)
+
+        return model.to(config.DEVICE)
 
 def get_dataset():
-    train,test,imgs_dir = XLS().get_all_info()
+    train,test = XLS().return_datasets()
 
-    train = Dataset(train,imgs_dir)
-    test = Dataset(test,imgs_dir)
+    train = Dataset(train,True)
+    test = Dataset(test,False)
 
     return train, test
-
-def get_dataloaders(trainDS,testDS):
-    trainLoader = DataLoader(trainDS,sampler=trainDS.sampler, shuffle=False,
-        batch_size=config.BATCH_SIZE, num_workers=0,collate_fn=collate_fn)
-    testLoader = DataLoader(testDS,sampler=testDS.sampler, shuffle=False,
-        batch_size=config.BATCH_SIZE, num_workers=0,collate_fn=collate_fn)
-
-    return trainLoader, testLoader
 
 def get_others(model):
 
@@ -67,12 +79,13 @@ def plot(H):
     plt.savefig(config.PLOT_LOSS_PATH)
 
 
-def training(model, trainLoader, lossFunc, optimizer, valLoader):
-    scores_train = scores()
+def training(model, trainLoader, lossFunc, optimizer, valLoader,fold):
+    metrics = {"train":[],"val":[]}
 
     # loop over epochs
     print("[INFO] training the network...")
     for epoch in range(config.NUM_EPOCHS):
+        scores_train = scores()
         # set the model in training mode
         model.train()
 
@@ -81,9 +94,10 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader):
         #     warmup_factor = 1.0 / 1000
         #     warmup_iters = min(1000, len(trainLoader) - 1)
 
-        #     lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        #         optimizer,mode="min",
-        #     )        
+        #     lr_scheduler = torch.optim.lr_scheduler.LinearLR(
+        #     optimizer, start_factor=warmup_factor, total_iters=warmup_iters
+        #     )
+        
 
         # loop over the training set
 
@@ -91,16 +105,13 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader):
         for idx_t,traindata in enumerate(tw :=qqdm(trainLoader, desc=format_str('bold', 'Description'))):
             images,targets = traindata
             # send the input to the device
-            # images = torch.stack([image.to(config.DEVICE) for image in images])
-            # targets = torch.stack([v.to(config.DEVICE) for v in targets]).float()
             images, targets = torch.stack(images).to(config.DEVICE), torch.stack(targets).view(-1).to(config.DEVICE)
-            
-            optimizer.zero_grad()
-            
+
             with torch.cuda.amp.autocast():
                 outputs = model(images)
                 loss_train = lossFunc(outputs,targets)
             
+            optimizer.zero_grad()
 
             train_loss.append(loss_train.item())
             temp_loss = sum(train_loss[-20:]) / min([len(train_loss),20])
@@ -113,8 +124,9 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader):
             optimizer.step()
 
             scores_train.update(outputs,targets)
-            tw.set_infos({"Epoch":f"{epoch}",
-                            "lr": f"{optimizer.param_groups[0]['lr']:.5f}",
+            tw.set_infos({"Fold":fold,
+                            "Epoch":f"{epoch}",
+                            "lr": f"{optimizer.param_groups[0]['lr']:.7f}",
                             "loss":"%.4f"%temp_loss,
                             **scores_train.metrics()})
 
@@ -122,13 +134,16 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader):
                 lr_scheduler.step()
         
         n_threads = torch.get_num_threads()
+
+        metrics["train"].append(scores_train.metric)
         
         if epoch % config.VALIDATE_PER_EPOCH == 0 and (epoch != 0 or config.VALIDATE_PER_EPOCH == 1):
-            scores_test = scores()
+            print(f'Validation')
+            print('--------------------------------')
+            scores_val = scores()
             # set the model in evaluation mode
             model.eval()
             # loop over the validation set
-
             val_loss = []
 
             # switch off autograd
@@ -146,32 +161,69 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader):
                     val_loss.append(loss_val.item())
                     temp_loss = sum(val_loss[-20:]) / min([len(val_loss),20])
 
-
-                    scores_test.update(outputs,targets)
+                    scores_val.update(outputs,targets)
                     tw.set_infos({"loss":"%.4f"%temp_loss,
-                                **scores_test.metrics()})
+                                **scores_val.metrics()})
 
         if (epoch % config.SAVE_MODEL_PER_EPOCH == 0 and (epoch != 0 or config.VALIDATE_PER_EPOCH == 1)) or epoch == config.NUM_EPOCHS-1:
-            print("Saving Model State Dict...")
-            torch.save(model.state_dict(), config.MODEL_PATH)
+            print("/nSaving Model State Dict...")
+            torch.save(model.state_dict(), config.MODEL_PATH.strip(".pth")+"_fold"+str(fold)+"_epoch"+str(epoch)+".pth")
 
         # accumulate predictions from all images
         torch.set_num_threads(n_threads)
+    return metrics
 
+def save_model_and_metrics(model,fold_metrics):
+    print("/nSaving Model...")
+    name = "model_"+model.__class__.__name__+".pth"
+    print(name)
+    if name not in os.listdir(config.BASE_OUTPUT):
+        torch.save(model.state_dict(), os.path.join(config.BASE_OUTPUT,name))
+    
+    jso = json.dumps(fold_metrics)
+    f = open(f"output/metrics_{model.__class__.__name__}.json","a")
+    f.write(jso)
+    f.close()
+    
+
+def get_dataloaders(train_valDS,train_sampler,val_sampler):
+    trainLoader = DataLoader(train_valDS,sampler=train_sampler, shuffle=False, batch_size=config.BATCH_SIZE, num_workers=0,collate_fn=collate_fn)
+    valLoader = DataLoader(train_valDS,sampler=val_sampler, shuffle=False, batch_size=config.BATCH_SIZE, num_workers=0,collate_fn=collate_fn)
+
+    return trainLoader, valLoader
+    
 def base():
-
-    trainDS, valDS = get_dataset()
-
-    print(f"[INFO] found {len(trainDS)} examples in the training set...")
-    print(f"[INFO] found {len(valDS)} examples in the val set...")
-
-    trainLoader, valLoader = get_dataloaders(trainDS, valDS)
-
+    train_valDS, testDS = get_dataset()
     model = get_model()
-
     lossFunc, opt= get_others(model)
 
-    training(model,trainLoader,lossFunc,opt,valLoader)
+    print(f"[INFO] found {len(train_valDS)} examples in the training set...")
+    print(f"[INFO] found {len(testDS)} examples in the test set...")
+    
+    total_time_start = time.time()
 
+    folds_metrics = {"training":[],"test":[]}
+    kfold = KFold(n_splits=config.CV_K_FOLDS, shuffle=True)
+
+    testLoader = DataLoader(testDS,config.BATCH_SIZE,shuffle=False,sampler=testDS.sampler,num_workers=0,collate_fn=collate_fn)
+
+
+    for fold, (train_ids, valid_ids) in enumerate(kfold.split(train_valDS)):
+        print(f'FOLD {fold}')
+        print('--------------------------------')
+        train_sampler = SubsetRandomSampler(train_ids)
+        val_sampler = SubsetRandomSampler(valid_ids)
+        trainLoader, valLoader = get_dataloaders(train_valDS,train_sampler, val_sampler)
+
+        training_metrics = training(model,trainLoader,lossFunc,opt,valLoader,fold)
+        folds_metrics["training"].append(training_metrics)
+
+        test_metrics = testing(model,lossFunc,testLoader)
+        folds_metrics["test"].append(test_metrics)
+
+    total_time = int(time.time()-total_time_start)/60
+    print(f"---------- Training_time:{total_time} minute ----------")
+    save_model_and_metrics(model,folds_metrics)
+    
 if __name__ == "__main__":
     base()

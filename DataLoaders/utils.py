@@ -1,4 +1,3 @@
-import torch
 from torch.utils.data import WeightedRandomSampler
 import numpy as np
 

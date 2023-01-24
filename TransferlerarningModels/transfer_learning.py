@@ -9,18 +9,6 @@ import cv2 as cv
 import numpy as np
 import pydicom as dicom 
 
-path = "/Users/okanegemen/Desktop/yoloV5/INbreast Release 1.0/AllDICOMs/20586986_6c613a14b80a8591_MG_L_ML_ANON.dcm"
-
-dicom_img = dicom.dcmread(path)
-
-numpy_pixels = dicom_img.pixel_array
-img = np.resize(numpy_pixels,(600,600))
-img = np.array(img,dtype="float32")
-
-
-tensor = torch.from_numpy(img)
-tensor = tensor.float()
-tensor = torch.reshape(tensor,[1, 1, 600, 600])
 
 
 import warnings
@@ -77,7 +65,7 @@ class efficientNet_v2L(nn.Module):
 
 class Resnet34(nn.Module):
 
-    def __init__(self,in_channels,num_classes):
+    def __init__(self,in_channels=4,num_classes=3):
 
         super(Resnet34,self).__init__()
 
@@ -456,7 +444,18 @@ class ConcatModel(nn.Module):
         return {"birads":birads , "acr":composition ,"kadran":kadran}
 
 
-model = models.resnet101()
+if __name__ == "__main__":
+    path = "/Users/okanegemen/Desktop/yoloV5/INbreast Release 1.0/AllDICOMs/20586986_6c613a14b80a8591_MG_L_ML_ANON.dcm"
+
+    dicom_img = dicom.dcmread(path)
+
+    numpy_pixels = dicom_img.pixel_array
+    img = np.resize(numpy_pixels,(600,600))
+    img = np.array(img,dtype="float32")
 
 
+    tensor = torch.from_numpy(img)
+    tensor = tensor.float()
+    tensor = torch.reshape(tensor,[1, 1, 600, 600])
 
+    model = models.resnet101()
