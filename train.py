@@ -1,5 +1,5 @@
 from DataLoaders.dataset import Dataset
-from TransferlerarningModels.transfer_learning import Resnet34 as load_model
+from TransferlerarningModels.transfer_learning import Resnet50 as load_model
 from DataLoaders.XLS_utils import XLS
 # from Pytorch_model.unet import UNet as load_model
 # from ConnectedSegnet.connectedSegnet_model import ConSegnetsModel as load_model
@@ -108,7 +108,7 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader,fold):
             images, targets = torch.stack(images).to(config.DEVICE), torch.stack(targets).view(-1).to(config.DEVICE)
 
             with torch.cuda.amp.autocast():
-                outputs = model(images)
+                outputs = model(images)["birads"]
                 loss_train = lossFunc(outputs,targets)
             
             optimizer.zero_grad()
@@ -155,7 +155,7 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader,fold):
                     images, targets = torch.stack(images).to(config.DEVICE), torch.stack(targets).view(-1).to(config.DEVICE)
                     if torch.cuda.is_available():
                         torch.cuda.synchronize()
-                    outputs = model(images)
+                    outputs = model(images)["birads"]
                     loss_val = lossFunc(outputs,targets)
 
                     val_loss.append(loss_val.item())
