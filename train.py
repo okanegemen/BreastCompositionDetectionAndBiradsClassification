@@ -1,7 +1,7 @@
 from DataLoaders.dataset import Dataset
 from TransferlerarningModels.transfer_learning import Resnet34 as load_model
 from DataLoaders.XLS_utils import XLS
-# from Pytorch_model.unet import UNet as load_model
+from Pytorch_model.unet import UNet as load_model
 # from ConnectedSegnet.connectedSegnet_model import ConSegnetsModel as load_model
 import DataLoaders.config as config
 import math
@@ -9,11 +9,10 @@ import sys
 import os
 from torch.nn import CrossEntropyLoss as Loss
 from torch.optim import Adam
-from torch.utils.data import DataLoader,SubsetRandomSampler
+from torch.utils.data import DataLoader
 from torchvision import transforms
 import matplotlib.pyplot as plt
 import torch
-import random
 import time
 from qqdm import qqdm, format_str
 from DataLoaders.scores import scores
@@ -79,13 +78,12 @@ def plot(H):
     plt.savefig(config.PLOT_LOSS_PATH)
 
 
-def training(model, trainLoader, lossFunc, optimizer, valLoader,fold):
-    metrics = {"train":[],"val":[]}
+def training(model, trainLoader, lossFunc, optimizer, valLoader):
+    scores_train = scores()
+
     # loop over epochs
     print("[INFO] training the network...")
     for epoch in range(config.NUM_EPOCHS):
-        scores_train = scores()
-
         # set the model in training mode
         model.train()
 
@@ -100,6 +98,7 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader,fold):
         
 
         # loop over the training set
+
         train_loss = []
         for idx_t,traindata in enumerate(tw :=qqdm(trainLoader, desc=format_str('bold', 'Description'))):
             images,targets = traindata
@@ -133,13 +132,9 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader,fold):
                 lr_scheduler.step()
         
         n_threads = torch.get_num_threads()
-
-        metrics["train"].append(scores_train.metric)
-
+        
         if epoch % config.VALIDATE_PER_EPOCH == 0 and (epoch != 0 or config.VALIDATE_PER_EPOCH == 1):
-            print(f'Validation')
-            print('--------------------------------')
-            scores_val = scores()
+            scores_test = scores()
             # set the model in evaluation mode
             model.eval()
             # loop over the validation set
@@ -165,11 +160,9 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader,fold):
                     temp_loss = sum(val_loss[-20:]) / min([len(val_loss),20])
 
 
-                    scores_val.update(outputs,targets)
+                    scores_test.update(outputs,targets)
                     tw.set_infos({"loss":"%.4f"%temp_loss,
-                                **scores_val.metrics()})
-
-                metrics["val"].append(scores_val.metric)
+                                **scores_test.metrics()})
 
         if (epoch % config.SAVE_MODEL_PER_EPOCH == 0 and (epoch != 0 or config.VALIDATE_PER_EPOCH == 1)) or epoch == config.NUM_EPOCHS-1:
             print("/nSaving Model State Dict...")
@@ -200,8 +193,15 @@ def get_dataloaders(train_valDS,train_sampler,val_sampler):
     
 def base():
 
-    train_valDS, testDS = get_dataset()
+    trainDS, valDS = get_dataset()
+
+    print(f"[INFO] found {len(trainDS)} examples in the training set...")
+    print(f"[INFO] found {len(valDS)} examples in the val set...")
+
+    trainLoader, valLoader = get_dataloaders(trainDS, valDS)
+
     model = get_model()
+
     lossFunc, opt= get_others(model)
 
     print(f"[INFO] found {len(train_valDS)} examples in the training set...")
