@@ -1,92 +1,96 @@
 import matplotlib.pyplot as plt
 import pydicom
 import pydicom.data
+from XML_utils import XML_files
 from torch import nn
 import torch
-import xml.etree.ElementTree as ET
 import numpy as np
+import pandas as pd
 import cv2
 from torchvision import datasets
 import os
-import pandas as pd
-from XML_utils import XML_files
+import random
+import math
 
 class DICOM_Dataset(datasets.VisionDataset):
-    def __init__(self, root,xml_folder_name="AllXML",dicom_folder_name="AllDICOMs", transform=None, target_transform=None, transforms=None):
-        super().__init__(root, transform=None, target_transform=None, transforms=None)
-        self.root = root
-        self.xml_folder_name = xml_folder_name
+    def __init__(self,dataset: pd.DataFrame,dicom_folder_name="AllDICOMs",xml_dicom_folder = "AllXML",threshold=2):
+        super().__init__(root)
         self.dicom_folder_name = dicom_folder_name
-        self.xml_df = XML_files(root).return_segmentations()
+        self.xml_folder_name = xml_dicom_folder
+        self.dataset = dataset
+        self.threshold = threshold
 
-
-        self.xls = self.open_xls()
-
-        dicom_names,filename,xml_names = [],[],[]
-        for name in os.listdir(os.path.join(root,dicom_folder_name)):
-            if name != ".DS_Store":
-                dicom_names.append(name)
-                filename.append(int(float(name.split("_")[0])))
-                xml_names.append(name.split("_")[0]+".xml" )
-
-            
-        self.dicom_info = pd.DataFrame(list(zip(dicom_names,filename,xml_names)),columns=["dicom_names","File Name","xml_names"])
-        self.merged = self.merge_dfs()
-        self.eliminate_columns_of_df()
-        
-    
     def __getitem__(self, index: int):
-        pass
-    
-    def eliminate_columns_of_df(self):
-        eliminated_columns_names = ["Other Notes","Other Annotations","Acquisition date","Pectoral Muscle Annotation","Asymmetry","Distortion","Micros","Mass ","Findings Notes (in Portuguese)","Lesion Annotation Status"]
-        self.merged = self.merged.drop(eliminated_columns_names, axis=1)
+        data = self.dataset.iloc[index,:]
+        dicti = data.to_dict()
+        self.dicom_name = dicti["dicom_names"]
 
-    def fill_na_in_df(self):
-        fill_na_columns = []
-        # self.merged['DataFrame Column'] = self.merged['DataFrame Column'].fillna(0)
+        segmentation = []
+        if isinstance(dicti["segmentations"],list):    
+            for seg in dicti["segmentations"]:
+                if len(seg)>self.threshold:
+                    segmentation.append(seg)
 
-    def display_dicom(self,dir,dicom_name,xml_name=None,sub_folder=["AllDICOMs","AllXML"]):
-        dicom_path = os.path.join(sub_folder[0],dicom_name)
-        data = self.dicom_open(dir,dicom_path)
+        dicom = torch.tensor(self.dicom_open(dicti["dicom_names"])/4095)
+        print([len(a) for a in segmentation])
+        print(self.dicom_name)
+        print(dicti["xml_names"])
+        mask ,mask_all= self.convert_points_to_boolmask(segmentation,dicom.shape)
+        mask = torch.tensor(mask)
 
-        if xml_name!=None:
-            ann = os.path.join(dir,sub_folder[1], xml_name)
-            ann = self.open_annotation(ann)
-            mask = self.convert_points_to_boolmask(ann,data.shape)
+        laterality = torch.tensor(self.laterality_to_int(dicti["Laterality"]))
+        view = torch.tensor(self.view_to_int(dicti["View"]))
+        acr = torch.tensor(dicti["ACR"] if isinstance(dicti["ACR"],int) else 0)
+        bi_rads = torch.tensor(self.bi_rads_to_int(dicti["Bi-Rads"]))
 
-            fig = plt.figure(figsize=(10,10))
-            rows=1
-            cols = 2
+        target = {
+            "mask":mask,
+            "mask_all":mask_all,
+            "Laterality": laterality,
+            "View": view,
+            "ACR": acr,
+            "Bi-Rads":bi_rads 
+        }
 
-            fig.add_subplot(rows,cols, 1)
-            plt.imshow(data, cmap=plt.cm.bone)  # set the color map to bone
-            plt.title("dicom")
+        return  dicom,target
 
-            fig.add_subplot(rows,cols,2)
-            plt.imshow(mask,cmap=plt.cm.bone)
-            plt.title("mask")
-
-            plt.show()
-        
+    @staticmethod
+    def bi_rads_to_int(a):
+        if isinstance(a,int):
+            return a
         else:
-            plt.imshow(data,cmap=plt.cm.bone)
-            plt.title("dicom")
-            plt.show()
+            return 4
+
+    @staticmethod
+    def view_to_int(a:str):
+        if a == "MLO":
+            return 0
+        elif a == "CC":
+            return 1
+
+    @staticmethod
+    def laterality_to_int(a:str):
+        if a == "L":
+            return 0
+        elif a == "R":
+            return 1
 
     def convert_points_to_boolmask(self,points, img_shape):
-        mask = np.zeros(img_shape, dtype=np.uint8)
-        if points!= None:
-            cv2.fillPoly(mask, pts=[points], color =(1,0,0))
+        if len(points)>0:
+            mask = np.zeros((len(points),*img_shape), dtype=np.uint8)
         else:
-            pass
-        return mask != 0
+            mask = np.zeros((1,*img_shape), dtype=np.uint8)
 
-    def merge_dfs(self):
-        merged_2 = pd.merge(left=self.dicom_info,right=self.xls,left_on="File Name",right_on="File Name",how="outer")
-        merged_3 = pd.merge(left=self.xml_df,right=merged_2,left_on="File Name",right_on="File Name",how="outer")
-        # merged.to_csv('raw_data.csv', index=False)
-        return merged_3
+        mask_all = np.zeros((1,*img_shape), dtype=np.uint8)
+
+        if len(points) >0:
+            for i in range(len(points)):
+                cv2.fillPoly(mask[i], pts=[np.array(points[i])], color =(1,0,0))
+            mask_all = torch.clamp(torch.sum(torch.tensor(mask),0),0,1)
+            print(mask_all.shape)
+            return mask ,mask_all
+        else: 
+            return mask ,mask_all
 
     def dicom_open(self,filename):
         # enter DICOM image name for pattern
@@ -100,19 +104,47 @@ class DICOM_Dataset(datasets.VisionDataset):
             return array
 
         except:
-            print(filename)
+            raise Exception(f"{filename} is not a dicom file.")
 
-    def open_xls(self,xls_filename="INbreast.xls",row_end = 410):
-        xls = pd.ExcelFile(os.path.join(self.root,xls_filename))
-        sheetX = xls.parse(0).iloc[:row_end,2:]
-        sheetX["File Name"].apply(lambda x:pd.to_numeric(x))
-        return sheetX
+    def __str__(self):
+        return str(self.dataset)
 
-    def return_df(self):
-        return self.merge_xls_and_info()
+def display_dicom(dicom,target):
+    mask = target["mask"]
+    bi_rads = target["Bi-Rads"]
+    mask_all = target["mask_all"]
+    print(mask.shape,mask_all.shape)
+
+    count,width,height = mask.shape
+    if count == 0:
+        count = 1
+    print(count+2)
+    fig = plt.figure(figsize=(15,15))
+    rows= int(input("row:"))
+    cols = int(input("col:"))
+
+    
+    fig.add_subplot(rows,cols, 1)
+    plt.imshow(dicom, cmap=plt.cm.bone)  # set the color map to bone
+    plt.title("dicom")
+
+    if len(mask)>0:
+        for i in range(count):
+            fig.add_subplot(rows,cols,i+2)
+            plt.imshow(mask[i],cmap=plt.cm.bone)
+            plt.title(f"mask {i+1}, Bi-Rads {bi_rads}")
+
+    fig.add_subplot(rows,cols, i+3)
+    plt.imshow(mask_all.squeeze(0), cmap=plt.cm.bone)
+    plt.title("mask_all")
+
+    plt.show()
 
 if __name__=="__main__":
     root = "/home/alican/Documents/AnkAI/yoloV5/INbreast Release 1.0"
-    df = DICOM_Dataset(root).merged
-    
-    print(df)
+    train, test = XML_files(root).return_datasets()
+    train = DICOM_Dataset(train)
+    dicom,target = train[75]
+    display_dicom(dicom,target)
+
+
