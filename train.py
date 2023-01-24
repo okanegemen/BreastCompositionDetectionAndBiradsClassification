@@ -1,5 +1,5 @@
 from DataLoaders.dataset import Dataset
-from TransferlerarningModels.transfer_learning import efficientNet_v2L as load_model
+from TransferlerarningModels.transfer_learning import Resnet34 as load_model
 from DataLoaders.XLS_utils import XLS
 # from Pytorch_model.unet import UNet as load_model
 # from ConnectedSegnet.connectedSegnet_model import ConSegnetsModel as load_model
@@ -57,12 +57,6 @@ def get_dataset():
     test = Dataset(test,False)
 
     return train, test
-
-def get_dataloaders(train_valDS,train_sampler,val_sampler):
-    trainLoader = DataLoader(train_valDS,sampler=train_sampler, shuffle=False, batch_size=config.BATCH_SIZE, num_workers=0,collate_fn=collate_fn)
-    valLoader = DataLoader(train_valDS,sampler=val_sampler, shuffle=False, batch_size=config.BATCH_SIZE, num_workers=0,collate_fn=collate_fn)
-
-    return trainLoader, valLoader
 
 def get_others(model):
 
@@ -179,7 +173,7 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader,fold):
 
         if (epoch % config.SAVE_MODEL_PER_EPOCH == 0 and (epoch != 0 or config.VALIDATE_PER_EPOCH == 1)) or epoch == config.NUM_EPOCHS-1:
             print("/nSaving Model State Dict...")
-            torch.save(model.state_dict(), config.MODEL_PATH+str(fold)+str(epoch)+".pth")
+            torch.save(model.state_dict(), config.MODEL_PATH.strip(".pth")+"_fold"+str(fold)+"_epoch"+str(epoch)+".pth")
 
         # accumulate predictions from all images
         torch.set_num_threads(n_threads)
@@ -196,6 +190,13 @@ def save_model_and_metrics(model,fold_metrics):
     f = open(f"output/metrics_{model.__class__.__name__}.json","a")
     f.write(jso)
     f.close()
+    
+
+def get_dataloaders(train_valDS,train_sampler,val_sampler):
+    trainLoader = DataLoader(train_valDS,sampler=train_sampler, shuffle=False, batch_size=config.BATCH_SIZE, num_workers=0,collate_fn=collate_fn)
+    valLoader = DataLoader(train_valDS,sampler=val_sampler, shuffle=False, batch_size=config.BATCH_SIZE, num_workers=0,collate_fn=collate_fn)
+
+    return trainLoader, valLoader
     
 def base():
 

@@ -23,7 +23,7 @@ NUM_LEVELS = 1
 
 
 INIT_LR = 0.0001
-NUM_EPOCHS = 10
+NUM_EPOCHS = 20
 BATCH_SIZE = 128
 
 L1regularization = False
@@ -32,17 +32,19 @@ L2regularization = False
 SAVE_MODEL_PER_EPOCH = 10
 VALIDATE_PER_EPOCH = 4
 
-INPUT_IMAGE_WIDTH = 80 # yatay
-INPUT_IMAGE_HEIGHT = 100 # dikey
+INPUT_IMAGE_WIDTH = 200 # yatay
+INPUT_IMAGE_HEIGHT = 200 # dikey
 CROP_RATIO = 0.9
+IGNORE_PIXELS = 5
+NORMALIZE = True
 
 PRINT_FREQ = None
 
 BASE_OUTPUT = os.path.join(MAIN_DIR,"yoloV5/output")
 
-LOAD_NEW_MODEL = True
+LOAD_NEW_MODEL = False
 
-MODEL_PATH = os.path.join(BASE_OUTPUT,"model_ResNet.pth")
+MODEL_PATH = os.path.join(BASE_OUTPUT,"model_Resnet34.pth019.pth")
 PLOT_ACC_PATH = os.path.sep.join([BASE_OUTPUT,"plot_acc.png"])
 PLOT_LOSS_PATH = os.path.sep.join([BASE_OUTPUT,"plot_loss.png"])
 PLOT_TEST = os.path.sep.join([BASE_OUTPUT,"plot_test.png"])
