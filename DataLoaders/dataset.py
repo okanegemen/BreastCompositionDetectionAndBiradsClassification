@@ -27,10 +27,9 @@ def get_transforms(train=True):
     if train:
         transform = torch.nn.Sequential(
                             # T.RandomAffine(7),
-                            # T.RandomErasing(scale=(0.02,0.1)),
+                            # T.RandomErasing(scale=(0.02,0.05)),
                             # T.RandomInvert(),
-                            T.RandomAutocontrast(),
-                            T.RandomSolarize(0.3),
+                            T.RandomAutocontrast(p=1.),
                             # T.RandomPerspective(0.2),
                         ).to(config.DEVICE)
         transform_cpu = T.Compose([
