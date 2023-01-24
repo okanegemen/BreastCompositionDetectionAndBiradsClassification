@@ -3,11 +3,11 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 import ast
 import glob
-# import config
-if __name__ == "__main__":
-    import config
-else:
-    import DataLoaders.config as config
+import config
+# if __name__ == "__main__":
+#     import config
+# else:
+#     import DataLoaders.config as config
 
 # importing
 class XLS():
