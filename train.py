@@ -8,7 +8,7 @@ import math
 import sys
 import os
 from torch.nn import CrossEntropyLoss as Loss
-from torch.optim import Adam
+from torch.optim import Adam,RMSprop,NAdam
 from torch.utils.data import DataLoader,SubsetRandomSampler
 from torchvision import transforms
 import matplotlib.pyplot as plt
@@ -61,7 +61,10 @@ def get_dataset():
 def get_others(model):
 
     lossFunc = Loss()
-    opt = Adam(model.parameters(), lr=config.INIT_LR)
+    # opt = RMSprop(model.parameters(),lr=config.INIT_LR)
+    opt = Adam(model.parameters(), lr=config.INIT_LR,weight_decay=1e-6)
+    print("LossFunc:",lossFunc)
+    print("Optimizer:",opt)
 
     return lossFunc,opt
 

@@ -21,6 +21,8 @@ from PIL import Image, ImageOps
 import torchvision.transforms.functional as TF
 import matplotlib.pyplot as plt
 import torchvision.transforms as T
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
 import numpy as np
 import pydicom
 import scipy.ndimage as ndi
@@ -32,19 +34,25 @@ import imutils
 def get_transforms(train=True):
     p = config.PAD_PIXELS
     if train:
-        transform = torch.nn.Sequential(
-                            T.RandomErasing(scale=(0.02,0.02)),
+        transform = A.Compose([
+                            A.AdvancedBlur(),
+        ])
+        #torch.nn.Sequential(
+                            # T.RandomErasing(scale=(0.02,0.02)),
                             # T.RandomInvert(),
-                            T.RandomAffine(5),
+                            # T.RandomRotation(10,expand=True),
+                            # T.RandomAffine(5),
+                            # T.RandomHorizontalFlip(),
+                            # T.RandomVerticalFlip(),
                             # T.LinearTransformation(),
-                            T.RandomAutocontrast(1.0),
+                            # T.RandomAutocontrast(1.0),
                             # T.RandomSolarize(0.3),
                             # T.RandomPerspective(0.2),
-                        ).to(config.DEVICE)
+                       # ).to(config.DEVICE)
+
         transform_cpu = T.Compose([
                             T.ToPILImage(),
                             T.Pad((p,p,p,p)),
-                            # T.RandomRotation(10,expand=True),
                             T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
                             T.RandomCrop((int(config.INPUT_IMAGE_HEIGHT*config.CROP_RATIO),int(config.INPUT_IMAGE_WIDTH*config.CROP_RATIO))),
                             T.GaussianBlur(5),
@@ -110,9 +118,9 @@ class Dataset(datasets.VisionDataset):
         if config.NORMALIZE:
             image = self.norm()(image) # mean = image.mean(dim=(1,2)
 
-        # for img in image:
-        #     T.ToPILImage()(img).show()
-        #     time.sleep(1)
+        for img in image:
+            T.ToPILImage()(img).show()
+            time.sleep(1)
         # target = {
         #     "birads":birads,
         #     "acr":acr
