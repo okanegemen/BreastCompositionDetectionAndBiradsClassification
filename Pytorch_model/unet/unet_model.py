@@ -3,7 +3,7 @@
 from .unet_parts import *
 
 class UNet(nn.Module):
-    def __init__(self, n_channels, n_classes, bilinear=False):
+    def __init__(self, n_channels=4, n_classes=3, bilinear=False):
         super(UNet, self).__init__()
         self.n_channels = n_channels
         self.n_classes = n_classes
@@ -44,7 +44,7 @@ class UNet(nn.Module):
         x = self.silu(x)
         x = self.fc2(x)
         x = self.soft_max(x)
-        return x
+        return {"birads":x}
 
 
 
