@@ -34,10 +34,7 @@ import imutils
 def get_transforms(train=True):
     p = config.PAD_PIXELS
     if train:
-        transform = A.Compose([
-                            A.AdvancedBlur(),
-        ])
-        #torch.nn.Sequential(
+        transform = torch.nn.Sequential(
                             # T.RandomErasing(scale=(0.02,0.02)),
                             # T.RandomInvert(),
                             # T.RandomRotation(10,expand=True),
@@ -48,23 +45,23 @@ def get_transforms(train=True):
                             # T.RandomAutocontrast(1.0),
                             # T.RandomSolarize(0.3),
                             # T.RandomPerspective(0.2),
-                       # ).to(config.DEVICE)
+                       ).to(config.DEVICE)
 
         transform_cpu = T.Compose([
                             T.ToPILImage(),
-                            T.Pad((p,p,p,p)),
+                            # T.Pad((p,p,p,p)),
                             T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
-                            T.RandomCrop((int(config.INPUT_IMAGE_HEIGHT*config.CROP_RATIO),int(config.INPUT_IMAGE_WIDTH*config.CROP_RATIO))),
-                            T.GaussianBlur(5),
+                            # T.RandomCrop((int(config.INPUT_IMAGE_HEIGHT*config.CROP_RATIO),int(config.INPUT_IMAGE_WIDTH*config.CROP_RATIO))),
+                            # T.GaussianBlur(5),
                             T.ToTensor(),
         ])
     else:
         transform = T.Compose([
                             T.ToPILImage(),
-                            T.Pad((5,5,5,5)),
+                            # T.Pad((p,p,p,p)),
                             T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
-                            T.CenterCrop((int(config.INPUT_IMAGE_HEIGHT*config.CROP_RATIO),int(config.INPUT_IMAGE_WIDTH*config.CROP_RATIO))),
-                            T.GaussianBlur(5),
+                            # T.CenterCrop((int(config.INPUT_IMAGE_HEIGHT*config.CROP_RATIO),int(config.INPUT_IMAGE_WIDTH*config.CROP_RATIO))),
+                            # T.GaussianBlur(5),
                             T.ToTensor(),
                         ])
         transform_cpu = None
@@ -118,9 +115,9 @@ class Dataset(datasets.VisionDataset):
         if config.NORMALIZE:
             image = self.norm()(image) # mean = image.mean(dim=(1,2)
 
-        for img in image:
-            T.ToPILImage()(img).show()
-            time.sleep(1)
+        # for img in image:
+        #     T.ToPILImage()(img).show()
+        #     time.sleep(1)
         # target = {
         #     "birads":birads,
         #     "acr":acr
