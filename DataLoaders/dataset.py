@@ -35,7 +35,7 @@ def get_transforms(train=True):
         transform = torch.nn.Sequential(
                             T.RandomErasing(scale=(0.02,0.02)),
                             # T.RandomInvert(),
-                            T.RandomAffine(5),
+                            # T.RandomAffine(5),
                             # T.LinearTransformation(),
                             T.RandomAutocontrast(1.0),
                             # T.RandomSolarize(0.3),
