@@ -6,12 +6,8 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Device: {DEVICE}")
 print(torch.__version__)
 
-<<<<<<< HEAD
 
 MAIN_DIR = "/home/alican/Documents/"
-=======
-MAIN_DIR = "/Users/okanegemen/Desktop/"
->>>>>>> 8a5bbc625755d1eec524bfc0f8d7f67d2f627dac
 DATASET_DIR = os.path.join(MAIN_DIR,"Datasets/")
 TEKNOFEST = os.path.join(DATASET_DIR,"TEKNOFEST_MG_EGITIM_1")
 BASE_OUTPUT = os.path.join(MAIN_DIR,"yoloV5")
@@ -22,9 +18,11 @@ SAVE_FOLDER = os.path.join(BASE_OUTPUT,"results_models")
 
 CROP_DATA = 0.
 TEST_SPLIT = 0.17
-K_FOLD = True
+K_FOLD = False
 CV_K_FOLDS = 5
-
+INIT_LR = 0.0001
+NUM_EPOCHS = 5
+BATCH_SIZE = 128
 
 ELIMINATE_CORRUPTED_PATIENTS = True
 
@@ -33,11 +31,6 @@ MODEL_INPUT_CONCATED = True
 NUM_CHANNELS = 4
 NUM_CLASSES = 3
 NUM_LEVELS = 1
-
-
-INIT_LR = 0.0001
-NUM_EPOCHS = 1
-BATCH_SIZE = 64
 
 L1regularization = False
 L2regularization = False

@@ -1,7 +1,7 @@
 from DataLoaders.dataset import Dataset
 from DataLoaders.XLS_utils import XLS
 # from Pytorch_model.unet import UNet as load_model
-# from ConnectedSegnet.connectedSegnet_model import ConSegnetsModel as load_model
+from AllModels.TransferlerarningModels.transfer_learning import Resnet18 as load_model
 import DataLoaders.config as config
 import math
 import sys
@@ -27,7 +27,7 @@ import shutil
 def collate_fn(batch):
     return tuple(zip(*batch))
 
-def get_model(load_model):
+def get_model():
     if config.LOAD_NEW_MODEL:
         # kwargs = dict({"num_classes":config.NUM_CLASSES})
         model = load_model(4)
@@ -96,57 +96,51 @@ def get_dataloaders(train_valDS,train_sampler,val_sampler):
 def base():
     test_acc = []
     loop = 5
-    for k in range(3):
-        if k==0:
-            from TransferlerarningModels.transfer_learning import efficientNet_v2L as load_model
-        elif k==1:
-            from Pytorch_model.unet import UNet as load_model
+    for i in range(loop):
+        imp.reload(config)
+        train_valDS, testDS = get_dataset()
+        model = get_model()
+        lossFunc, opt= get_others(model)
+
+        print(f"[INFO] found {len(train_valDS)} examples in the training set...")
+        print(f"[INFO] found {len(testDS)} examples in the test set...")
         
-        for i in range(loop):
-            imp.reload(config)
-            train_valDS, testDS = get_dataset()
-            model = get_model(load_model)
-            lossFunc, opt= get_others(model)
+        total_time_start = time.time()
 
-            print(f"[INFO] found {len(train_valDS)} examples in the training set...")
-            print(f"[INFO] found {len(testDS)} examples in the test set...")
-            
-            total_time_start = time.time()
+        metrics = {"training":[],"test":[]}
 
-            metrics = {"training":[],"test":[]}
-
-            testLoader = DataLoader(testDS,config.BATCH_SIZE,shuffle=False,num_workers=4,collate_fn=collate_fn)
+        testLoader = DataLoader(testDS,config.BATCH_SIZE,shuffle=False,num_workers=4,collate_fn=collate_fn)
 
 
-            if config.K_FOLD:
-                kfold = KFold(n_splits=config.CV_K_FOLDS, shuffle=True)
-                for fold, (train_ids, valid_ids) in enumerate(kfold.split(train_valDS)):
-                    print(f'FOLD {fold}')
-                    print('--------------------------------')
-                    train_sampler = SubsetRandomSampler(train_ids)
-                    val_sampler = SubsetRandomSampler(valid_ids)
-                    trainLoader, valLoader = get_dataloaders(train_valDS,train_sampler, val_sampler)
+        if config.K_FOLD:
+            kfold = KFold(n_splits=config.CV_K_FOLDS, shuffle=True)
+            for fold, (train_ids, valid_ids) in enumerate(kfold.split(train_valDS)):
+                print(f'FOLD {fold}')
+                print('--------------------------------')
+                train_sampler = SubsetRandomSampler(train_ids)
+                val_sampler = SubsetRandomSampler(valid_ids)
+                trainLoader, valLoader = get_dataloaders(train_valDS,train_sampler, val_sampler)
 
-                    training_metrics = training(model,trainLoader,lossFunc,opt,valLoader,fold)
-                    metrics["training"].append(training_metrics)
-
-                    test_metrics = testing(model,lossFunc,testLoader)
-                    metrics["test"].append(test_metrics)
-            
-            else:
-                trainLoader = DataLoader(train_valDS,config.BATCH_SIZE,sampler=train_valDS.sampler,num_workers=4,collate_fn=collate_fn)
-                training_metrics = training(model,trainLoader,lossFunc,opt)
+                training_metrics = training(model,trainLoader,lossFunc,opt,valLoader,fold)
                 metrics["training"].append(training_metrics)
 
                 test_metrics = testing(model,lossFunc,testLoader)
                 metrics["test"].append(test_metrics)
+        
+        else:
+            trainLoader = DataLoader(train_valDS,config.BATCH_SIZE,sampler=train_valDS.sampler,num_workers=4,collate_fn=collate_fn)
+            training_metrics = training(model,trainLoader,lossFunc,opt)
+            metrics["training"].append(training_metrics)
 
-            for i in range(3):
-                test_acc.append(metrics["test"][i]["acc"])
+            test_metrics = testing(model,lossFunc,testLoader)
+            metrics["test"].append(test_metrics)
 
-            total_time = int(time.time()-total_time_start)/60
-            print(f"---------- Training_time:{total_time} minute ----------")
-            save_model_and_metrics(model,metrics)
+        for i in range(3):
+            test_acc.append(metrics["test"][i]["acc"])
+
+        total_time = int(time.time()-total_time_start)/60
+        print(f"---------- Training_time:{total_time} minute ----------")
+        save_model_and_metrics(model,metrics)
     
     print(test_acc)
     print(sum(test_acc)/len(test_acc))
