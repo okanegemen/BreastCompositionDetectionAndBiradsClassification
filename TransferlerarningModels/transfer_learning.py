@@ -19,12 +19,12 @@ warnings.filterwarnings("ignore")
 
 
 class efficientNet_v2L(nn.Module):
-    def __init__(self,in_channels,num_classes):
+    def __init__(self,in_channels,num_classes=3):
         super(efficientNet_v2L,self).__init__()
 
         self.in_channels = in_channels
         self.num_classes = num_classes
-        self.model = models.efficientnet_v2_l(weights = models.EfficientNet_V2_L_Weights,pretrained = False)
+        self.model = models.efficientnet_v2_l()
         self.First= nn.Sequential(nn.Conv2d(self.in_channels, 32, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False),
 
                                         nn.BatchNorm2d(32, eps=0.001, momentum=0.1, affine=True, track_running_stats=True),
@@ -57,7 +57,7 @@ class efficientNet_v2L(nn.Module):
         out = self.classifier(out)
 
         
-        return out 
+        return {"birads":out} 
 
 
 
@@ -92,7 +92,7 @@ class Resnet34(nn.Module):
         out = self.last(out)
 
 
-        return out 
+        return {"birads":out}
 
 
 
@@ -100,7 +100,7 @@ class Resnet34(nn.Module):
 
 
 class ResNet101(nn.Module):
-    def __init__(self,in_channels,num_classes) :
+    def __init__(self,in_channels,num_classes=3) :
 
         super(ResNet101,self).__init__()
 
@@ -131,7 +131,7 @@ class ResNet101(nn.Module):
         out = self.fc(out)
 
 
-        return out
+        return {"birads":out}
 
 
 

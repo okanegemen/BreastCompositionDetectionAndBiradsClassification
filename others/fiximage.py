@@ -2,11 +2,7 @@ import cv2
 import numpy as np
 import time
 import cv2
-
-if __name__ == "__main__":
-    import config
-else:
-    import DataLoaders.config as config
+import config
 import imutils
 
 def true_norm(img):

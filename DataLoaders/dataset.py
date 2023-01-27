@@ -2,7 +2,8 @@ if __name__ == "__main__":
     from XLS_utils import XLS 
     from utils import get_class_weights,get_sampler
     import config
-    
+    from visualize_one_patient import four_image_show,tensor_concat
+    import fiximage
 else:
     from .XLS_utils import XLS 
     from .utils import get_class_weights,get_sampler
@@ -94,7 +95,6 @@ class Dataset(datasets.VisionDataset):
     def __getitem__(self, index: int):
         data = self.dataset.iloc[index,:]
         dicti = data.to_dict()
-
         images = self.loadImg(dicti["HASTANO"])
 
         birads = torch.tensor(dicti["BIRADS KATEGORİSİ"],dtype=torch.int64)
@@ -111,13 +111,15 @@ class Dataset(datasets.VisionDataset):
 
         images = {key:image for key,image in images.items()}
 
-        image = torch.stack([image.squeeze() for image in images.values()]).to(config.DEVICE)
+        image = torch.stack([image.squeeze() for image in images.values()])
         if config.NORMALIZE:
             image = self.norm()(image) # mean = image.mean(dim=(1,2)
-
+        # x = tensor_concat(image)
+        # x.show()
+        # input()
         # for img in image:
         #     T.ToPILImage()(img).show()
-        #     time.sleep(1)
+            # time.sleep(1)
         # target = {
         #     "birads":birads,
         #     "acr":acr
@@ -129,7 +131,7 @@ class Dataset(datasets.VisionDataset):
 
     def norm(self):
         Norm = T.Normalize([0.1846, 0.1545, 0.1837, 0.1523], [0.2831, 0.2638, 0.2830, 0.2616])
-        return torch.nn.Sequential(Norm).to(config.DEVICE)
+        return torch.nn.Sequential(Norm)
 
     def loadImg(self,hastano):
         images = {}
@@ -149,7 +151,6 @@ class Dataset(datasets.VisionDataset):
                 except:
                     pass
             images[dcm] = image
-
         return images
 
     def dicom_paths_func(self):
@@ -166,7 +167,7 @@ class Dataset(datasets.VisionDataset):
         path = os.path.join(config.TEKNOFEST,hastano,dcm+".dcm")
         dicom_img = pydicom.dcmread(path)
         numpy_pixels = dicom_img.pixel_array
-        numpy_pixels = imutils.resize(numpy_pixels,height=config.INPUT_IMAGE_HEIGHT*3)
+        numpy_pixels = imutils.resize(numpy_pixels,height=config.INPUT_IMAGE_HEIGHT*5)
         return numpy_pixels
 
     @classmethod
@@ -210,5 +211,5 @@ if __name__=="__main__":
     print(len(train))
     print(len(test))
 
-    for i in range(20):
+    for i in range(29,50):
         train[i]
