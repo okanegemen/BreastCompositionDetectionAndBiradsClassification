@@ -5,7 +5,11 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Device: {DEVICE}")
 print(torch.__version__)
 
+
 MAIN_DIR = "/home/robotik/Documents/"
+
+MAIN_DIR = "/Users/okanegemen/Desktop/"
+
 DATASET_DIR = os.path.join(MAIN_DIR,"Datasets/")
 TEKNOFEST = os.path.join(DATASET_DIR,"TEKNOFEST_MG_EGITIM_1")
 
