@@ -13,3 +13,4 @@ openpyxl==3.0.10
 torchmetrics
 imutils
 kaleido
+albumentations
