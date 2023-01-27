@@ -6,8 +6,12 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Device: {DEVICE}")
 print(torch.__version__)
 
+<<<<<<< HEAD
 
 MAIN_DIR = "/home/alican/Documents/"
+=======
+MAIN_DIR = "/Users/okanegemen/Desktop/"
+>>>>>>> 8a5bbc625755d1eec524bfc0f8d7f67d2f627dac
 DATASET_DIR = os.path.join(MAIN_DIR,"Datasets/")
 TEKNOFEST = os.path.join(DATASET_DIR,"TEKNOFEST_MG_EGITIM_1")
 BASE_OUTPUT = os.path.join(MAIN_DIR,"yoloV5")

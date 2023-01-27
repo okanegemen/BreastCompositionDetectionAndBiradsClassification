@@ -63,6 +63,69 @@ class efficientNet_v2L(nn.Module):
 
 
 
+class efficientNetv2s(nn.Module):
+    def __init__(self,in_channels=4,num_classes = 3, weight : bool = False):
+        super(efficientNetv2s,self).__init__()
+
+        model = models.efficientnet_v2_s(pretrained = weight)
+
+
+        modules = [module for module in model.children()]
+
+
+        self.first_block = modules[0][0]
+
+        self.first_block[0] = nn.Conv2d(in_channels, 24, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+
+        self.body = modules[0][1:]
+
+
+        self.classifier = modules[-1]
+
+        self.classifier[-1] = nn.Linear(1280,num_classes)
+
+        print(self.first_block)
+
+
+    def forward(self,inputs):
+        out = self.first_block(inputs)
+        out = self.body(out)
+
+        out = out.view(out.size(0),-1)
+        out = self.classifier(out)
+
+        return out
+
+
+
+
+
+class Resnet18(nn.Module):
+    def __init__(self,in_channels=4,num_classes=3) :
+        super(Resnet18,self).__init__()
+
+        model = models.resnet18()
+
+        modules = [module for module in model.children()]
+
+        
+        first_block = nn.Conv2d(in_channels, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+        body = modules[1:-1]
+        self.features = nn.Sequential(first_block,*body)
+        self.classifier = nn.Linear(in_features=512, out_features=num_classes, bias=True)
+
+    def forward(self,input):
+
+        
+        out = self.features(input)
+        out = out.view(out.size(0),-1)
+        out = self.classifier(out)
+
+        return out 
+
+
+
+
 class Resnet34(nn.Module):
 
     def __init__(self,in_channels=4,num_classes=3):
