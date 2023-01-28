@@ -576,22 +576,27 @@ class AlexnetCat(nn.Module):
         return out
 
 
-model = AlexnetCat(1)
-
-import os 
 
 
 
-os.chdir("./modeller")
+
+if __name__ == "__main__":
 
 
-with open("efficientNET.txt","w") as f:
+    import os 
 
-    for module in model.children():
 
-        f.write(str(module)+"\n")
 
-    f.close()
+    os.chdir("./modeller")
+
+
+    with open("efficientNET.txt","w") as f:
+
+        for module in model.children():
+
+            f.write(str(module)+"\n")
+
+        f.close()
 
 
 
