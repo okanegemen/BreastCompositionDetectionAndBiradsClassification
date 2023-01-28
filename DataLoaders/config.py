@@ -19,37 +19,38 @@ SAVE_FOLDER = os.path.join(BASE_OUTPUT,"results_models")
 CROP_DATA = 0.
 TEST_SPLIT = 0.17
 K_FOLD = False
-CV_K_FOLDS = 5
+CV_K_FOLDS = 4
 INIT_LR = 0.0001
 NUM_EPOCHS = 5
-BATCH_SIZE = 128
+BATCH_SIZE = 64
 
 ELIMINATE_CORRUPTED_PATIENTS = True
 
 MODEL_INPUT_CONCATED = True
+FREEZE_LAYER = 4/7  # baştan 
 
 NUM_CHANNELS = 4
 NUM_CLASSES = 3
 NUM_LEVELS = 1
 
+FOCAL_LOSS = True
 L1regularization = False
 L2regularization = False
 
 SAVE_MODEL_PER_EPOCH = 10
 VALIDATE_PER_EPOCH = 5
 
-INPUT_IMAGE_WIDTH = 24 # yatay
-INPUT_IMAGE_HEIGHT = 24 # dikeyweights = models.EfficientNet_V2_L_Weights,pretrained = False
+INPUT_IMAGE_WIDTH = 64 # yatay
+INPUT_IMAGE_HEIGHT = 64 # dikeyweights = models.EfficientNet_V2_L_Weights,pretrained = False
 CROP_RATIO = 0.9
 PAD_PIXELS = 7
-NORMALIZE = True
-
+NORMALIZE = False
 PRINT_FREQ = None
 
 
 LOAD_NEW_MODEL = True
 
-MODEL_PATH = os.path.join(BASE_OUTPUT,"output/model_Resnet34.pth019.pth")
+MODEL_PATH = os.path.join(BASE_OUTPUT,"results_models/partial_train/Resnet18_1_28_16_57/Resnet18.pth")
 PLOT_ACC_PATH = os.path.sep.join([BASE_OUTPUT,"output/plot_acc.png"])
 PLOT_LOSS_PATH = os.path.sep.join([BASE_OUTPUT,"output/plot_loss.png"])
 PLOT_TEST = os.path.sep.join([BASE_OUTPUT,"output/plot_test.png"])

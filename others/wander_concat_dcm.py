@@ -7,7 +7,7 @@ import torch
 import time
 from XLS_utils import XLS 
 import config
-from others.dataset import Dataset
+from dataset import Dataset
 
 dcm_names = ["LCC","LMLO","RCC","RMLO"]
 
@@ -35,8 +35,8 @@ if __name__ == "__main__":
 
     #["LCC","LMLO","RCC","RMLO"]
     for i in range(len(train)):
-        m = train[i][0].mean(dim=(1,2))
-        s = train[i][0].std(dim=(1,2))
+        m = train[i][0].mean(dim=(1,2)).to(config.DEVICE)
+        s = train[i][0].std(dim=(1,2)).to(config.DEVICE)
         mean += m
         std += s
         if ((m>0.7).sum()<=2):
@@ -52,6 +52,14 @@ if __name__ == "__main__":
     print(mean,std)
     print(mean_d,std_d)
     print(mean_l,std_l)
+
+
+# tensor([527.1708, 498.0023, 528.9872, 499.4696], device='cuda:0') tensor([892.8487, 884.1351, 893.8290, 884.8680], device='cuda:0')
+# tensor([527.1708, 498.0023, 528.9872, 499.4696], device='cuda:0') tensor([892.8487, 884.1351, 893.8290, 884.8680], device='cuda:0')
+# tensor([0., 0., 0., 0.], device='cuda:0') tensor([0., 0., 0., 0.], device='cuda:0')
+# tensor([0.1704, 0.1610, 0.1710, 0.1615], device='cuda:0') tensor([0.2887, 0.2859, 0.2890, 0.2861], device='cuda:0')
+# tensor([0.1704, 0.1610, 0.1710, 0.1615], device='cuda:0') tensor([0.2887, 0.2859, 0.2890, 0.2861], device='cuda:0')
+# tensor([nan, nan, nan, nan], device='cuda:0') tensor([nan, nan, nan, nan], device='cuda:0')
 
 # tensor([609.6924, 510.1406, 606.7292, 503.0339], device='cuda:0') tensor([934.7719, 871.1933, 934.4750, 863.7477], device='cuda:0')
 # tensor([609.6924, 510.1406, 606.7292, 503.0339], device='cuda:0') tensor([934.7719, 871.1933, 934.4750, 863.7477], device='cuda:0')

@@ -9,7 +9,7 @@ import os
 from torch.nn import CrossEntropyLoss as Loss
 from torch.optim import Adam,RMSprop,NAdam
 from torch.utils.data import DataLoader,SubsetRandomSampler
-from torchvision import transforms
+from torchvision import transforms as T
 import matplotlib.pyplot as plt
 import torch
 import random
@@ -38,7 +38,6 @@ def get_model():
         print("Random Weighted ModelS loaded.")
         # print(model)
 
-        return model.to(config.DEVICE)
     else:
         model = load_model(4)
         print("############# Previous weights loaded. ###################")
@@ -47,10 +46,39 @@ def get_model():
         # print(model.classifier)
         # model.classifier = torch.nn.Linear(1024,config.NUM_CLASSES)
 
-        # for name,param in model.named_parameters():
-        #     print(name,param.requires_grad)
+        # for id,child in enumerate(model.children()):
+        #     if id==0:
+        #         for param in child.parameters():
+        #             param.requires_grad=True
+        #     elif id<int(config.FREEZE_LAYER*ct-1):
+        #         for param in child.parameters():
+        #             param.requires_grad = False
+        #     if id==(ct-1):
+        #         for param in child.parameters():
+        #             param.requires_grad=True
+    if config.FREEZE_LAYER>0:
+        ct = 0
+        for child in model.parameters():
+            ct += 1
+        print("Number of layers:",ct)
 
-        return model.to(config.DEVICE)
+        lt=config.FREEZE_LAYER*ct
+        cntr=0
+
+        for param in model.parameters():
+            cntr+=1
+            if cntr == 1:
+                param.requires_grad = True
+
+            elif cntr < lt:
+                param.requires_grad = False
+            elif cntr == ct:
+                param.requires_grad = True
+
+
+        for id,(name,param) in enumerate(model.named_parameters()):
+            print(name,param.requires_grad)
+    return model.to(config.DEVICE)
 
 def get_dataset():
     train,test = XLS().return_datasets()
@@ -64,7 +92,7 @@ def get_others(model):
 
     lossFunc = Loss()
     # opt = RMSprop(model.parameters(),lr=config.INIT_LR)
-    opt = Adam(model.parameters(), lr=config.INIT_LR,weight_decay=1e-6)
+    opt = Adam(model.parameters(), lr=config.INIT_LR)#,weight_decay=1e-6
     print("LossFunc:",lossFunc)
     print("Optimizer:",opt)
 
@@ -73,7 +101,7 @@ def get_others(model):
 
 def save_model_and_metrics(model,fold_metrics):
     print("\nSaving Model...")
-    name = "cross_val/"+model.__class__.__name__+"_"+config.DATE_FOLDER
+    name = "partial_train/"+model.__class__.__name__+"_"+config.DATE_FOLDER
     os.makedirs(os.path.join(config.SAVE_FOLDER,name))
     torch.save(model.state_dict(), os.path.join(config.SAVE_FOLDER,name,model.__class__.__name__+".pth"))
 
@@ -95,11 +123,11 @@ def get_dataloaders(train_valDS,train_sampler,val_sampler):
     
 def base():
     test_acc = []
-    loop = 5
-    for i in range(loop):
-        imp.reload(config)
+    model = get_model()
+    loop = 3
+    for _ in range(loop):
+        # imp.reload(config)
         train_valDS, testDS = get_dataset()
-        model = get_model()
         lossFunc, opt= get_others(model)
 
         print(f"[INFO] found {len(train_valDS)} examples in the training set...")
@@ -108,7 +136,12 @@ def base():
         total_time_start = time.time()
 
         metrics = {"training":[],"test":[]}
-
+        # image,_ = train_valDS[0]
+        # for id,img in enumerate(image):
+        #     print(img.mean(),img.std())
+        #     T.ToPILImage()(img).show()
+        #     time.sleep(1)
+        # input()
         testLoader = DataLoader(testDS,config.BATCH_SIZE,shuffle=False,num_workers=4,collate_fn=collate_fn)
 
 
@@ -135,8 +168,7 @@ def base():
             test_metrics = testing(model,lossFunc,testLoader)
             metrics["test"].append(test_metrics)
 
-        for i in range(3):
-            test_acc.append(metrics["test"][i]["acc"])
+        test_acc.append(metrics["test"][-1]["acc"])
 
         total_time = int(time.time()-total_time_start)/60
         print(f"---------- Training_time:{total_time} minute ----------")

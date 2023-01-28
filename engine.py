@@ -5,7 +5,15 @@ from qqdm import qqdm, format_str
 import math
 import sys
 
+def focal_loss(outputs,targets, alpha=1, gamma=2):
+    ce_loss = torch.nn.functional.cross_entropy(outputs, targets, reduction='none') # important to add reduction='none' to keep per-batch-item loss
+    pt = torch.exp(-ce_loss)
+    focal_loss = (alpha * (1-pt)**gamma * ce_loss).mean()
+    return focal_loss
+
 def training(model, trainLoader, lossFunc, optimizer, valLoader=None,fold="---"):
+    if config.FOCAL_LOSS:
+        loss_Func = focal_loss
     metrics = {"train":[],"val":[]}
 
     # loop over epochs
@@ -37,6 +45,16 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader=None,fold="---")
                 outputs = model(images)["birads"]
                 loss_train = lossFunc(outputs,targets)
             
+            l1_regularization = 0.
+            l2_regularization = 0.
+            if config.L1regularization:
+                for param in model.parameters():
+                    l1_regularization += param.abs().sum()
+            if config.L2regularization:
+                for param in model.parameters():
+                    l2_regularization += (param**2).sum()
+            loss_train += l1_regularization + l2_regularization
+
             optimizer.zero_grad()
 
             train_loss.append(loss_train.item())

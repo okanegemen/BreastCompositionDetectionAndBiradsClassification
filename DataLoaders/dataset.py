@@ -36,23 +36,23 @@ def get_transforms(train=True):
     p = config.PAD_PIXELS
     if train:
         transform = torch.nn.Sequential(
-                            # T.RandomErasing(scale=(0.02,0.02)),
+                            # T.RandomErasing(scale=(0.01,0.01)),
                             # T.RandomInvert(),
-                            # T.RandomRotation(10,expand=True),
-                            # T.RandomAffine(5),
+                            T.RandomRotation(4,expand=True),
+                            # T.RandomAffine(3),
                             # T.RandomHorizontalFlip(),
                             # T.RandomVerticalFlip(),
                             # T.LinearTransformation(),
                             # T.RandomAutocontrast(1.0),
                             # T.RandomSolarize(0.3),
-                            # T.RandomPerspective(0.2),
+                            # T.RandomPerspective(0.1),
                        ).to(config.DEVICE)
 
         transform_cpu = T.Compose([
                             T.ToPILImage(),
                             # T.Pad((p,p,p,p)),
                             T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
-                            # T.RandomCrop((int(config.INPUT_IMAGE_HEIGHT*config.CROP_RATIO),int(config.INPUT_IMAGE_WIDTH*config.CROP_RATIO))),
+                            T.RandomCrop((int(config.INPUT_IMAGE_HEIGHT-2),int(config.INPUT_IMAGE_WIDTH-2))),
                             # T.GaussianBlur(5),
                             T.ToTensor(),
         ])
@@ -61,6 +61,7 @@ def get_transforms(train=True):
                             T.ToPILImage(),
                             # T.Pad((p,p,p,p)),
                             T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
+                            # T.RandomCrop((int(config.INPUT_IMAGE_HEIGHT*config.CROP_RATIO),int(config.INPUT_IMAGE_WIDTH*config.CROP_RATIO))),
                             # T.CenterCrop((int(config.INPUT_IMAGE_HEIGHT*config.CROP_RATIO),int(config.INPUT_IMAGE_WIDTH*config.CROP_RATIO))),
                             # T.GaussianBlur(5),
                             T.ToTensor(),
@@ -80,6 +81,7 @@ class Dataset(datasets.VisionDataset):
 
         self.dcm_names = ["LCC","LMLO","RCC","RMLO"]
 
+        self.norm_T = T.Compose([T.Normalize([0.1704, 0.1610, 0.1710, 0.1615], [0.2887, 0.2859, 0.2890, 0.2861],True)])
         self.dataset = dataset
         self.dataset_name = config.TEKNOFEST
         self.transform,self.transform_cpu = get_transforms(train_transform)
@@ -112,14 +114,9 @@ class Dataset(datasets.VisionDataset):
         images = {key:image for key,image in images.items()}
 
         image = torch.stack([image.squeeze() for image in images.values()])
-        if config.NORMALIZE:
-            image = self.norm()(image) # mean = image.mean(dim=(1,2)
-        # x = tensor_concat(image)
-        # x.show()
-        # input()
-        # for img in image:
-        #     T.ToPILImage()(img).show()
-            # time.sleep(1)
+        # if config.NORMALIZE:
+        #         self.norm_T(image)
+
         # target = {
         #     "birads":birads,
         #     "acr":acr
@@ -129,9 +126,6 @@ class Dataset(datasets.VisionDataset):
         # }
         return  image,birads
 
-    def norm(self):
-        Norm = T.Normalize([0.1846, 0.1545, 0.1837, 0.1523], [0.2831, 0.2638, 0.2830, 0.2616])
-        return torch.nn.Sequential(Norm)
 
     def loadImg(self,hastano):
         images = {}
@@ -140,16 +134,17 @@ class Dataset(datasets.VisionDataset):
             image = fiximage.fit_image(image)
             image = imutils.resize(image,height = config.INPUT_IMAGE_HEIGHT)
             h,w = image.shape
+
             if list(dcm)[0] == "R":
                 try:
                     image = np.pad(image, ((0, 0), (h-w,0)), 'constant')
                 except:
-                    pass # image = image[:,w-h:]
+                    image = image[:,w-h:] # image = image[:,w-h:]
             else:
                 try:
                     image = np.pad(image, ((0, 0), (0,h-w)), 'constant')
                 except:
-                    pass
+                    image = image[:,:h]
             images[dcm] = image
         return images
 
@@ -167,7 +162,7 @@ class Dataset(datasets.VisionDataset):
         path = os.path.join(config.TEKNOFEST,hastano,dcm+".dcm")
         dicom_img = pydicom.dcmread(path)
         numpy_pixels = dicom_img.pixel_array
-        numpy_pixels = imutils.resize(numpy_pixels,height=config.INPUT_IMAGE_HEIGHT*5)
+        numpy_pixels = imutils.resize(numpy_pixels,height=config.INPUT_IMAGE_HEIGHT*3)
         return numpy_pixels
 
     @classmethod

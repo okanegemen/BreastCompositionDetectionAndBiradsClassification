@@ -82,7 +82,7 @@ class efficientNetv2s(nn.Module):
 
         self.classifier = modules[-1]
 
-        self.classifier[-1] = nn.Linear(1280,num_classes)
+        self.classifier[-1] = nn.Linear(5*64*64,num_classes)
 
         print(self.first_block)
 
@@ -94,17 +94,17 @@ class efficientNetv2s(nn.Module):
         out = out.view(out.size(0),-1)
         out = self.classifier(out)
 
-        return out
+        return {"birads":out}
 
 
 
 
 
 class Resnet18(nn.Module):
-    def __init__(self,in_channels=4,num_classes=3) :
+    def __init__(self,in_channels=4,num_classes=3,pretrained=True) :
         super(Resnet18,self).__init__()
 
-        model = models.resnet18()
+        model = models.resnet18(pretrained=pretrained)
 
         modules = [module for module in model.children()]
 
