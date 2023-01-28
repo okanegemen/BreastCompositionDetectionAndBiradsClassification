@@ -38,7 +38,7 @@ def get_transforms(train=True):
         transform = torch.nn.Sequential(
                             # T.RandomErasing(scale=(0.01,0.01)),
                             # T.RandomInvert(),
-                            T.RandomRotation(4,expand=True),
+                            # T.RandomRotation(4,expand=True),
                             # T.RandomAffine(3),
                             # T.RandomHorizontalFlip(),
                             # T.RandomVerticalFlip(),
@@ -114,8 +114,8 @@ class Dataset(datasets.VisionDataset):
         images = {key:image for key,image in images.items()}
 
         image = torch.stack([image.squeeze() for image in images.values()])
-        # if config.NORMALIZE:
-        #         self.norm_T(image)
+        if config.NORMALIZE:
+                self.norm_T(image)
 
         # target = {
         #     "birads":birads,

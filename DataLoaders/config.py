@@ -21,13 +21,13 @@ TEST_SPLIT = 0.17
 K_FOLD = False
 CV_K_FOLDS = 4
 INIT_LR = 0.0001
-NUM_EPOCHS = 5
+NUM_EPOCHS = 20
 BATCH_SIZE = 64
 
-ELIMINATE_CORRUPTED_PATIENTS = True
+ELIMINATE_CORRUPTED_PATIENTS = True # only for train
 
 MODEL_INPUT_CONCATED = True
-FREEZE_LAYER = 4/7  # baştan 
+FREEZE_LAYER = 0.8  # baştan 
 
 NUM_CHANNELS = 4
 NUM_CLASSES = 3
@@ -40,11 +40,11 @@ L2regularization = False
 SAVE_MODEL_PER_EPOCH = 10
 VALIDATE_PER_EPOCH = 5
 
-INPUT_IMAGE_WIDTH = 64 # yatay
-INPUT_IMAGE_HEIGHT = 64 # dikeyweights = models.EfficientNet_V2_L_Weights,pretrained = False
+INPUT_IMAGE_WIDTH = 128 # yatay
+INPUT_IMAGE_HEIGHT = 128 # dikeyweights = models.EfficientNet_V2_L_Weights,pretrained = False
 CROP_RATIO = 0.9
 PAD_PIXELS = 7
-NORMALIZE = False
+NORMALIZE = True
 PRINT_FREQ = None
 
 

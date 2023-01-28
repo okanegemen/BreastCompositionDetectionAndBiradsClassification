@@ -1,7 +1,7 @@
 from DataLoaders.dataset import Dataset
 from DataLoaders.XLS_utils import XLS
 # from Pytorch_model.unet import UNet as load_model
-from AllModels.TransferlerarningModels.transfer_learning import Resnet18 as load_model
+from AllModels.TransferlerarningModels.transfer_learning import efficientNet_v2L as load_model
 import DataLoaders.config as config
 import math
 import sys
@@ -101,7 +101,7 @@ def get_others(model):
 
 def save_model_and_metrics(model,fold_metrics):
     print("\nSaving Model...")
-    name = "partial_train/"+model.__class__.__name__+"_"+config.DATE_FOLDER
+    name = ""+model.__class__.__name__+"_"+config.DATE_FOLDER
     os.makedirs(os.path.join(config.SAVE_FOLDER,name))
     torch.save(model.state_dict(), os.path.join(config.SAVE_FOLDER,name,model.__class__.__name__+".pth"))
 
@@ -124,7 +124,7 @@ def get_dataloaders(train_valDS,train_sampler,val_sampler):
 def base():
     test_acc = []
     model = get_model()
-    loop = 3
+    loop = 1
     for _ in range(loop):
         # imp.reload(config)
         train_valDS, testDS = get_dataset()
@@ -136,9 +136,9 @@ def base():
         total_time_start = time.time()
 
         metrics = {"training":[],"test":[]}
-        # image,_ = train_valDS[0]
-        # for id,img in enumerate(image):
-        #     print(img.mean(),img.std())
+        image,_ = train_valDS[0]
+        for id,img in enumerate(image):
+            print(img.min(),img.max())
         #     T.ToPILImage()(img).show()
         #     time.sleep(1)
         # input()
