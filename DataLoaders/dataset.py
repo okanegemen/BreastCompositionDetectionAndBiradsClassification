@@ -35,33 +35,33 @@ def get_transforms(train=True):
     p = config.PAD_PIXELS
     if train:
         transform = torch.nn.Sequential(
-                            # T.RandomErasing(scale=(0.02,0.02)),
+                            T.RandomErasing(scale=(0.02,0.02)),
                             # T.RandomInvert(),
-                            # T.RandomRotation(10,expand=True),
+                            T.RandomRotation(5,expand=True),
                             # T.RandomAffine(5),
                             # T.RandomHorizontalFlip(),
                             # T.RandomVerticalFlip(),
                             # T.LinearTransformation(),
-                            # T.RandomAutocontrast(1.0),
+                            T.RandomAutocontrast(1.0),
                             # T.RandomSolarize(0.3),
-                            # T.RandomPerspective(0.2),
+                            T.RandomPerspective(0.05),
                        ).to(config.DEVICE)
 
         transform_cpu = T.Compose([
                             T.ToPILImage(),
-                            # T.Pad((p,p,p,p)),
+                            T.Pad((p,p,p,p)),
                             T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
-                            # T.RandomCrop((int(config.INPUT_IMAGE_HEIGHT*config.CROP_RATIO),int(config.INPUT_IMAGE_WIDTH*config.CROP_RATIO))),
-                            # T.GaussianBlur(5),
+                            T.RandomCrop((int(config.INPUT_IMAGE_HEIGHT*config.CROP_RATIO),int(config.INPUT_IMAGE_WIDTH*config.CROP_RATIO))),
+                            T.GaussianBlur(5),
                             T.ToTensor(),
         ])
     else:
         transform = T.Compose([
                             T.ToPILImage(),
-                            # T.Pad((p,p,p,p)),
+                            T.Pad((p,p,p,p)),
                             T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
-                            # T.CenterCrop((int(config.INPUT_IMAGE_HEIGHT*config.CROP_RATIO),int(config.INPUT_IMAGE_WIDTH*config.CROP_RATIO))),
-                            # T.GaussianBlur(5),
+                            T.CenterCrop((int(config.INPUT_IMAGE_HEIGHT*config.CROP_RATIO),int(config.INPUT_IMAGE_WIDTH*config.CROP_RATIO))),
+                            T.GaussianBlur(5),
                             T.ToTensor(),
                         ])
         transform_cpu = None

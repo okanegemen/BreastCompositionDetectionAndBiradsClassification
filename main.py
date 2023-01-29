@@ -1,7 +1,7 @@
 from DataLoaders.dataset import Dataset
-# from TransferlerarningModels.transfer_learning import Resnet50 as load_model
+from TransferlerarningModels.transfer_learning import efficientNet_v2L as load_model
 from DataLoaders.XLS_utils import XLS
-from Pytorch_model.segnet.model import SegNet as load_model
+# from Pytorch_model.segnet.model import SegNet as load_model
 # from ConnectedSegnet.connectedSegnet_model import ConSegnetsModel as load_model
 import DataLoaders.config as config
 import math
