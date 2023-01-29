@@ -3,12 +3,12 @@ import numpy as np
 import time
 import cv2
 import imutils
-# import config
+import config
 
-if __name__ == "__main__":
-    import config
-else:
-    import DataLoaders.config as config
+# if __name__ == "__main__":
+#     import config
+# else:
+#     import DataLoaders.config as config
 
 def true_norm(img):
     norm = (img - img.min())

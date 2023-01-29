@@ -2,7 +2,8 @@ if __name__ == "__main__":
     from XLS_utils import XLS 
     from utils import get_class_weights,get_sampler
     import config
-    
+    from visualize_one_patient import four_image_show,tensor_concat
+    import fiximage
 else:
     from .XLS_utils import XLS 
     from .utils import get_class_weights,get_sampler
@@ -35,24 +36,24 @@ def get_transforms(train=True):
     p = config.PAD_PIXELS
     if train:
         transform = torch.nn.Sequential(
-                            T.RandomErasing(scale=(0.02,0.02)),
+                            # T.RandomErasing(scale=(0.01,0.01)),
                             # T.RandomInvert(),
-                            T.RandomRotation(5,expand=True),
-                            # T.RandomAffine(5),
+                            # T.RandomRotation(4,expand=True),
+                            # T.RandomAffine(3),
                             # T.RandomHorizontalFlip(),
                             # T.RandomVerticalFlip(),
                             # T.LinearTransformation(),
                             T.RandomAutocontrast(1.0),
                             # T.RandomSolarize(0.3),
-                            T.RandomPerspective(0.05),
+                            # T.RandomPerspective(0.1),
                        ).to(config.DEVICE)
 
         transform_cpu = T.Compose([
                             T.ToPILImage(),
                             T.Pad((p,p,p,p)),
                             T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
-                            T.RandomCrop((int(config.INPUT_IMAGE_HEIGHT*config.CROP_RATIO),int(config.INPUT_IMAGE_WIDTH*config.CROP_RATIO))),
-                            T.GaussianBlur(5),
+                            T.RandomCrop((int(config.INPUT_IMAGE_HEIGHT-2),int(config.INPUT_IMAGE_WIDTH-2))),
+                            # T.GaussianBlur(5),
                             T.ToTensor(),
         ])
     else:
@@ -60,8 +61,9 @@ def get_transforms(train=True):
                             T.ToPILImage(),
                             T.Pad((p,p,p,p)),
                             T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
-                            T.CenterCrop((int(config.INPUT_IMAGE_HEIGHT*config.CROP_RATIO),int(config.INPUT_IMAGE_WIDTH*config.CROP_RATIO))),
-                            T.GaussianBlur(5),
+                            # T.RandomCrop((int(config.INPUT_IMAGE_HEIGHT*config.CROP_RATIO),int(config.INPUT_IMAGE_WIDTH*config.CROP_RATIO))),
+                            # T.CenterCrop((int(config.INPUT_IMAGE_HEIGHT*config.CROP_RATIO),int(config.INPUT_IMAGE_WIDTH*config.CROP_RATIO))),
+                            # T.GaussianBlur(5),
                             T.ToTensor(),
                         ])
         transform_cpu = None
@@ -79,6 +81,7 @@ class Dataset(datasets.VisionDataset):
 
         self.dcm_names = ["LCC","LMLO","RCC","RMLO"]
 
+        self.norm_T = T.Compose([T.Normalize([0.1704, 0.1610, 0.1710, 0.1615], [0.2887, 0.2859, 0.2890, 0.2861],True)])
         self.dataset = dataset
         self.dataset_name = config.TEKNOFEST
         self.transform,self.transform_cpu = get_transforms(train_transform)
@@ -94,7 +97,6 @@ class Dataset(datasets.VisionDataset):
     def __getitem__(self, index: int):
         data = self.dataset.iloc[index,:]
         dicti = data.to_dict()
-
         images = self.loadImg(dicti["HASTANO"])
 
         birads = torch.tensor(dicti["BIRADS KATEGORİSİ"],dtype=torch.int64)
@@ -111,13 +113,10 @@ class Dataset(datasets.VisionDataset):
 
         images = {key:image for key,image in images.items()}
 
-        image = torch.stack([image.squeeze() for image in images.values()]).to(config.DEVICE)
+        image = torch.stack([image.squeeze() for image in images.values()])
         if config.NORMALIZE:
-            image = self.norm()(image) # mean = image.mean(dim=(1,2)
+                self.norm_T(image)
 
-        # for img in image:
-        #     T.ToPILImage()(img).show()
-        #     time.sleep(1)
         # target = {
         #     "birads":birads,
         #     "acr":acr
@@ -127,9 +126,6 @@ class Dataset(datasets.VisionDataset):
         # }
         return  image,birads
 
-    def norm(self):
-        Norm = T.Normalize([0.1846, 0.1545, 0.1837, 0.1523], [0.2831, 0.2638, 0.2830, 0.2616])
-        return torch.nn.Sequential(Norm).to(config.DEVICE)
 
     def loadImg(self,hastano):
         images = {}
@@ -138,18 +134,18 @@ class Dataset(datasets.VisionDataset):
             image = fiximage.fit_image(image)
             image = imutils.resize(image,height = config.INPUT_IMAGE_HEIGHT)
             h,w = image.shape
+
             if list(dcm)[0] == "R":
                 try:
                     image = np.pad(image, ((0, 0), (h-w,0)), 'constant')
                 except:
-                    pass # image = image[:,w-h:]
+                    image = image[:,w-h:] # image = image[:,w-h:]
             else:
                 try:
                     image = np.pad(image, ((0, 0), (0,h-w)), 'constant')
                 except:
-                    pass
+                    image = image[:,:h]
             images[dcm] = image
-
         return images
 
     def dicom_paths_func(self):
@@ -210,5 +206,5 @@ if __name__=="__main__":
     print(len(train))
     print(len(test))
 
-    for i in range(20):
+    for i in range(29,50):
         train[i]

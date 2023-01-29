@@ -9,7 +9,7 @@ import config
 import pydicom
 import torch 
 import scipy.ndimage as ndi
-from process.fiximage import fit_image
+from fiximage import fit_image
 import pandas as pd
 import cv2
 
@@ -66,7 +66,7 @@ def four_image_show(hastano,w = config.INPUT_IMAGE_HEIGHT,h = config.INPUT_IMAGE
 def hastano_from_txt(txt_path = os.path.join(config.MAIN_DIR,"yoloV5","others","kirli_resimler.txt")):
     with open(txt_path) as text_file:
         lines = text_file.readlines()
-    dcm_folders = [int(line.split("\t")[0]) for line in lines]
+    dcm_folders = [int(line.strip("\n").split("\t")[0]) for line in lines]
     return dcm_folders
 
 def hastano_from_dir():
@@ -76,13 +76,13 @@ def hastano_from_dir():
 
 if __name__ == "__main__":
 
-    patients = hastano_from_dir()#list(set([int(i) for i in os.listdir(TEKNOFEST) if len(i.split("."))<2]))
+    patients = hastano_from_txt()#list(set([int(i) for i in os.listdir(TEKNOFEST) if len(i.split("."))<2]))
     images = []
-    k = 23
+    k = 0#113
     for i,folder in enumerate(patients[k:]):
         four_image_show(folder)
-        # print(k+i,folder)
-        # a = input()
+        print(k+i,folder)
+        a = input()
 
         # if a == 'n':
         #     with open(os.path.join(DATASET_DIR,"images.txt"), "a") as text_file:
