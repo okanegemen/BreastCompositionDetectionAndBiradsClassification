@@ -14,20 +14,22 @@ BASE_OUTPUT = os.path.join(MAIN_DIR,"yoloV5")
 
 DATE = datetime.datetime.now().astimezone().timetuple()
 DATE_FOLDER = str(DATE[1])+"_"+str(DATE[2])+"_"+str(DATE[3])+"_"+str(DATE[4])
+MID_FOLDER = os.path.join(BASE_OUTPUT,"output")
 SAVE_FOLDER = os.path.join(BASE_OUTPUT,"results_models")
 
 CROP_DATA = 0.
 TEST_SPLIT = 0.17
-K_FOLD = False
+K_FOLD = True
 CV_K_FOLDS = 4
 INIT_LR = 0.0001
-NUM_EPOCHS = 20
+NUM_EPOCHS = 15
 BATCH_SIZE = 64
 
 ELIMINATE_CORRUPTED_PATIENTS = True # only for train
 
 MODEL_INPUT_CONCATED = True
-FREEZE_LAYER = 0.8  # baştan 
+FREEZE_LAYER = 0.5  # baştan 
+SKIP_FREEZE = [1,1,3] # 1 dondur 1 atla son 3 katmana karışma
 
 NUM_CHANNELS = 4
 NUM_CLASSES = 3
@@ -40,8 +42,8 @@ L2regularization = False
 SAVE_MODEL_PER_EPOCH = 10
 VALIDATE_PER_EPOCH = 5
 
-INPUT_IMAGE_WIDTH = 128 # yatay
-INPUT_IMAGE_HEIGHT = 128 # dikeyweights = models.EfficientNet_V2_L_Weights,pretrained = False
+INPUT_IMAGE_WIDTH = 64 # yatay
+INPUT_IMAGE_HEIGHT = 64 # dikeyweights = models.EfficientNet_V2_L_Weights,pretrained = False
 CROP_RATIO = 0.9
 PAD_PIXELS = 7
 NORMALIZE = True
@@ -50,7 +52,7 @@ PRINT_FREQ = None
 
 LOAD_NEW_MODEL = True
 
-MODEL_PATH = os.path.join(BASE_OUTPUT,"results_models/partial_train/Resnet18_1_28_16_57/Resnet18.pth")
+MODEL_PATH = os.path.join(BASE_OUTPUT,"results_models/AlexnetCat2_1_29_17_15/AlexnetCat2.pth")
 PLOT_ACC_PATH = os.path.sep.join([BASE_OUTPUT,"output/plot_acc.png"])
 PLOT_LOSS_PATH = os.path.sep.join([BASE_OUTPUT,"output/plot_loss.png"])
 PLOT_TEST = os.path.sep.join([BASE_OUTPUT,"output/plot_test.png"])

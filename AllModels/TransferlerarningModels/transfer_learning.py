@@ -24,20 +24,10 @@ warnings.filterwarnings("ignore")
 
 
 class efficientNet_v2L(nn.Module):
-<<<<<<< HEAD
-    def __init__(self,in_channels,num_classes=3):
-        super(efficientNet_v2L,self).__init__()
-
-        self.in_channels = in_channels
-        self.num_classes = num_classes
-        self.model = models.efficientnet_v2_l()
-        self.First= nn.Sequential(nn.Conv2d(self.in_channels, 32, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False),
-=======
     def __init__(self,in_channels,num_classes,pretrained=False):
         super(efficientNet_v2L,self).__init__()
 
         model = models.efficientnet_v2_l(pretrained = pretrained)
->>>>>>> 307ce92c8b6d90c6300ae061fb162296ed0ca8a7
 
         modules = [module for module in model.children()]
 
@@ -58,20 +48,15 @@ class efficientNet_v2L(nn.Module):
 
       
     def forward(self,inputs):
-            out = self.first_block_will_using(inputs)
+        out = self.first_block_will_using(inputs)
 
-            out = self.body(out)
-            out = out.view(out.size(0),-1)
-
-<<<<<<< HEAD
+        out = self.body(out)
         
+        out = out.view(out.size(0),-1)
+        out = self.classifier(out)
+
         return {"birads":out} 
-=======
-            out = self.classifier(out)
->>>>>>> 307ce92c8b6d90c6300ae061fb162296ed0ca8a7
 
-
-            return out
 
 
 
@@ -82,7 +67,7 @@ class efficientNet_v2L(nn.Module):
 
 
 class efficientNetv2s(nn.Module):
-    def __init__(self,in_channels=4,num_classes = 3, weight : bool = False):
+    def __init__(self,in_channels=4,num_classes = 3, weight : bool = True):
         super(efficientNetv2s,self).__init__()
 
         model = models.efficientnet_v2_s(pretrained = weight)
@@ -100,10 +85,7 @@ class efficientNetv2s(nn.Module):
 
         self.classifier = modules[-1]
 
-        self.classifier[-1] = nn.Linear(5*64*64,num_classes)
-
-        print(self.first_block)
-
+        self.classifier[-1] = nn.Sequential(nn.Dropout(p=0.4,inplace=True),nn.Linear(in_features=5120, out_features=num_classes, bias=True))
 
     def forward(self,inputs):
         out = self.first_block(inputs)
@@ -531,7 +513,6 @@ class ConcatModel(nn.Module):
         concat2 = torch.cat((out3,out4),1)
         final = torch.cat((concat1,concat2),1)
         final = torch.reshape(final,[1,256,600,600])
-        print(final.size())
         features = self.featureExtrator(final)
 
         features = features.view(features.size(0),-1)
@@ -562,14 +543,12 @@ class AlexnetCat(nn.Module):
 
         self.model = efficientNet_v2L(in_channels=256,num_classes=num_classes[0])
 
-        self.dcm_names = ["LCC","LMLO","RCC","RMLO"]
-
     def forward(self,inputs:dict):
 
-        input1 = inputs["LCC"]
-        input2 = inputs["LMLO"]
-        input3 = inputs["RCC"]
-        input4 = inputs["RMLO"]
+        input1 = inputs[:,0,:,:].unsqueeze(1)
+        input2 = inputs[:,1,:,:].unsqueeze(1)
+        input3 = inputs[:,2,:,:].unsqueeze(1)
+        input4 = inputs[:,3,:,:].unsqueeze(1)
 
         out1 = self.img1(input1)
         out2 = self.img2(input2)
@@ -590,6 +569,47 @@ class AlexnetCat(nn.Module):
 
         return out
 
+
+class AlexnetCat2(AlexnetCat):
+
+    def __init__(self,in_channels=1,num_classes=[3,4,10]):
+        super(AlexnetCat2,self).__init__()
+
+        self.img1 = FeaturesImg(in_channels)
+        self.img2 = FeaturesImg(in_channels)
+        self.img3 = FeaturesImg(in_channels)
+        self.img4 = FeaturesImg(in_channels)
+
+        self.se1 = SEBlock(n_in=256)
+
+
+        self.model = efficientNetv2s(in_channels=256,num_classes=num_classes[0])
+
+    def forward(self,inputs:dict):
+
+        input1 = inputs[:,0,:,:].unsqueeze(1)
+        input2 = inputs[:,1,:,:].unsqueeze(1)
+        input3 = inputs[:,2,:,:].unsqueeze(1)
+        input4 = inputs[:,3,:,:].unsqueeze(1)
+
+        out1 = self.img1(input1)
+        out2 = self.img2(input2)
+
+        out3 = self.img3(input3)
+
+        out4 = self.img4(input4)
+
+        cat1 = torch.cat((out1,out2),dim=1)
+
+        cat2 = torch.cat((out3,out4),dim=1)
+
+        cat_last = torch.cat((cat1,cat2),dim=1)
+        
+        out = self.se1(cat_last)
+
+        out = self.model(out)
+
+        return out
 
 
 
