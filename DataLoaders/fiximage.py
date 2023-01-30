@@ -9,6 +9,7 @@ if __name__ == "__main__":
     import config
 else:
     import DataLoaders.config as config
+    
 def true_norm(img):
     norm = (img - img.min())
     norm = (norm / norm.max())*255
@@ -42,8 +43,8 @@ def fit_image(X):
     X = X*(X>23) #57
     X = mask_external_contour(X).astype(np.uint8)
     # X = cv2.equalizeHist(X)
-    clahe = cv2.createCLAHE(clipLimit = config.CLAHE_CLIP)
-    X = clahe.apply(X)
+    # clahe = cv2.createCLAHE(clipLimit = config.CLAHE_CLIP)
+    # X = clahe.apply(X)
     
     return X
 

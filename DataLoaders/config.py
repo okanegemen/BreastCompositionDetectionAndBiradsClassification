@@ -43,8 +43,8 @@ L2regularization = False
 SAVE_MODEL_PER_EPOCH = 10
 VALIDATE_PER_EPOCH = 5
 
-INPUT_IMAGE_WIDTH = 300 # yatay
-INPUT_IMAGE_HEIGHT = 300 # dikeyweights = models.EfficientNet_V2_L_Weights,pretrained = False
+INPUT_IMAGE_WIDTH = 100 # yatay
+INPUT_IMAGE_HEIGHT = 100 # dikeyweights = models.EfficientNet_V2_L_Weights,pretrained = False
 CROP_RATIO = 0.9
 PAD_PIXELS = 7
 NORMALIZE = True

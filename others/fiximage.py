@@ -43,8 +43,8 @@ def fit_image(X):
     X = X*(X>23) #57
     X = mask_external_contour(X).astype(np.uint8)
     # X = cv2.equalizeHist(X)
-    clahe = cv2.createCLAHE(clipLimit = 2)
-    X = clahe.apply(X)
+    # clahe = cv2.createCLAHE(clipLimit = 2)
+    # X = clahe.apply(X)
     
     return X
 

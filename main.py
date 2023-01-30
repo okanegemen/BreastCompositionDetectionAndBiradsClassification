@@ -67,7 +67,7 @@ def get_model():
 
         for param in model.parameters():
             cntr+=1
-            if cntr < 42:
+            if cntr < 3:
                 param.requires_grad = True
 
             elif cntr < lt:
@@ -107,7 +107,7 @@ def get_others(model):
 
     lossFunc = Loss()
     # opt = RMSprop(model.parameters(),lr=config.INIT_LR)
-    opt = Adam(model.parameters(), lr=config.INIT_LR)#,weight_decay=1e-6
+    opt = Adam(model.parameters(), lr=config.INIT_LR,weight_decay=1e-5)#,weight_decay=1e-6
     print("LossFunc:",lossFunc)
     print("Optimizer:",opt)
 

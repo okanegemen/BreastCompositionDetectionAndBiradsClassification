@@ -21,7 +21,7 @@ transform = T.Compose([
                 ])
 
 def norm():
-    Norm = T.Normalize([0.1704, 0.1610, 0.1710, 0.1615], [0.2887, 0.2859, 0.2890, 0.2861])
+    Norm = T.Normalize([0.1525, 0.1502, 0.1543, 0.1522],[0.2215, 0.2315, 0.2231, 0.2336])
     return torch.nn.Sequential(Norm)
 
 def norm_image(norm_imgs):
@@ -169,11 +169,11 @@ if __name__ == "__main__":
     for hastano in hastanos[k:]:
         x = four_image_show(hastano)
         y,norm_imgs = four_image_show_norm(hastano)
-        # images = norm_image(norm_imgs)
+        images = norm_image(norm_imgs)
         z = get_concat_h(x,y)
-        # t = get_concat_h(z,images)
+        t = get_concat_h(z,images)
 
-        z.show()
+        t.show()
         print(k,hastano)
         input()
         k += 1
