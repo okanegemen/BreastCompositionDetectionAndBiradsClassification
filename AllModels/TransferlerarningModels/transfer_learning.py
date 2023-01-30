@@ -543,7 +543,7 @@ class AlexnetCat(nn.Module):
         self.se1 = SEBlock(n_in=256)
 
 
-        self.model = efficientNet_v2L(in_channels=256,num_classes=num_classes[0])
+        self.model = efficientNet_v2L(in_channels=256)
 
         self.dropout = nn.Dropout(p=0.4,inplace=True)
         self.fc1 = nn.Linear(1280,512)
@@ -553,7 +553,6 @@ class AlexnetCat(nn.Module):
         self.fc3 = nn.Linear(256,128)
 
         self.fc4 = nn.Linear(128,num_classes[0])
-        self.dcm_names = ["LCC","LMLO","RCC","RMLO"]
 
     def forward(self,inputs:dict):
 
@@ -611,7 +610,6 @@ class AlexnetCat2(nn.Module):
         self.fc3 = nn.Linear(256,128)
 
         self.fc4 = nn.Linear(128,num_classes[0])
-        self.dcm_names = ["LCC","LMLO","RCC","RMLO"]
 
     def forward(self,inputs:dict):
 
