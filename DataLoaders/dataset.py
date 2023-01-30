@@ -105,7 +105,7 @@ class Dataset(datasets.VisionDataset):
         # kadran_l = torch.tensor(dicti["KADRAN BİLGİSİ (SOL)"])
 
         for name,image in images.items():
-            image = torch.from_numpy(image).float().unsqueeze(0)
+            image = torch.from_numpy(image).float().unsqueeze(0)/255.
 
             images[name] = self.transform(image)
             if self.train_transform:
@@ -114,8 +114,8 @@ class Dataset(datasets.VisionDataset):
         images = {key:image for key,image in images.items()}
 
         image = torch.stack([image.squeeze() for image in images.values()])
-        if config.NORMALIZE:
-                self.norm_T(image)
+        # if config.NORMALIZE:
+        #         self.norm_T(image)
 
         # target = {
         #     "birads":birads,

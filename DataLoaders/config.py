@@ -35,6 +35,7 @@ NUM_CHANNELS = 4
 NUM_CLASSES = 3
 NUM_LEVELS = 1
 
+CLAHE_CLIP = 2
 FOCAL_LOSS = True
 L1regularization = False
 L2regularization = False
@@ -42,8 +43,8 @@ L2regularization = False
 SAVE_MODEL_PER_EPOCH = 10
 VALIDATE_PER_EPOCH = 5
 
-INPUT_IMAGE_WIDTH = 64 # yatay
-INPUT_IMAGE_HEIGHT = 64 # dikeyweights = models.EfficientNet_V2_L_Weights,pretrained = False
+INPUT_IMAGE_WIDTH = 300 # yatay
+INPUT_IMAGE_HEIGHT = 300 # dikeyweights = models.EfficientNet_V2_L_Weights,pretrained = False
 CROP_RATIO = 0.9
 PAD_PIXELS = 7
 NORMALIZE = True
