@@ -9,7 +9,6 @@ import time
 import torch
 import imutils
 import fiximage
-import cv2
 
 MAIN_DIR = "/home/alican/Documents/"
 DATASET_DIR = os.path.join(MAIN_DIR,"Datasets/")
@@ -69,7 +68,6 @@ def dicom_open_norm(hastano,dcm):
     path = os.path.join(config.TEKNOFEST,str(hastano),dcm+".dcm")
     dicom_img = pydicom.dcmread(path)
     numpy_pixels = dicom_img.pixel_array
-    numpy_pixels = imutils.resize(numpy_pixels,height=config.INPUT_IMAGE_HEIGHT*3)
     return numpy_pixels
 
 def get_concat_h(im1, im2):
@@ -88,30 +86,27 @@ def four_image_show_norm(hastano,w = config.INPUT_IMAGE_HEIGHT,h = config.INPUT_
     dcm_names = ["LMLO","LCC","RMLO","RCC"]
     norm_imgs = []
     images = []
-
-    start = time.time()
     for dcm in dcm_names:
         image = dicom_open_norm(os.path.join(str(hastano)),dcm)
 
         norm_img = fiximage.fit_image(image)
         norm_img = imutils.resize(norm_img,height = config.INPUT_IMAGE_HEIGHT)
         h,w = norm_img.shape
-
         if list(dcm)[0] == "R":
             try:
                 norm_img = np.pad(norm_img, ((0, 0), (h-w,0)), 'constant')
             except:
-                norm_img = norm_img[:,w-h:] # image = image[:,w-h:]
+                pass # image = image[:,w-h:]
         else:
             try:
                 norm_img = np.pad(norm_img, ((0, 0), (0,h-w)), 'constant')
             except:
-                norm_img = norm_img[:,:h]
-        img = torch.from_numpy(norm_img).unsqueeze(0).float()/ 255.
+                pass
+        img = torch.from_numpy(norm_img.astype("float32")).float().unsqueeze(0)/255.
         images.append(img)
         norm_img =transform(img)
         norm_imgs.append(norm_img)
-    print(time.time()-start)
+
     a = get_concat_v(norm_imgs[0],norm_imgs[1])
     b = get_concat_v(norm_imgs[2],norm_imgs[3])
     c = get_concat_h(b,a)
@@ -131,7 +126,7 @@ def four_image_show(hastano,w = config.INPUT_IMAGE_HEIGHT,h = config.INPUT_IMAGE
 
     return c
 
-def hastano_from_txt(txt_path = os.path.join(MAIN_DIR,"yoloV5","others","kalan_kirli.txt")):
+def hastano_from_txt(txt_path = os.path.join(MAIN_DIR,"yoloV5","others","kirli_resimler.txt")):
     with open(txt_path) as text_file:
         lines = text_file.readlines()
     dcm_folders = [int(line.split("\t")[0]) for line in lines]
@@ -163,8 +158,7 @@ def four_concat(dcm_folders, dcm_names = ["LMLO","LCC","RMLO","RCC"]):
         c.show()
         time.sleep(1)
 if __name__ == "__main__":
-    hastanos = os.listdir(TEKNOFEST)
-    # hastanos = hastano_from_txt()
+    hastanos = os.listdir(TEKNOFEST)#hastano_from_txt()
     k = 0
     for hastano in hastanos[k:]:
         x = four_image_show(hastano)

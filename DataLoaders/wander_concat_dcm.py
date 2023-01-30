@@ -53,6 +53,13 @@ if __name__ == "__main__":
     print(mean_d,std_d)
     print(mean_l,std_l)
 
+# tensor([471.5336, 464.4264, 477.3960, 470.7619], device='cuda:0') tensor([685.1426, 715.8910, 689.9050, 722.4031], device='cuda:0')
+# tensor([471.5336, 464.4264, 477.3960, 470.7619], device='cuda:0') tensor([685.1426, 715.8910, 689.9050, 722.4031], device='cuda:0')
+# tensor([0., 0., 0., 0.], device='cuda:0') tensor([0., 0., 0., 0.], device='cuda:0')
+# tensor([0.1525, 0.1502, 0.1543, 0.1522], device='cuda:0') tensor([0.2215, 0.2315, 0.2231, 0.2336], device='cuda:0')
+# tensor([0.1525, 0.1502, 0.1543, 0.1522], device='cuda:0') tensor([0.2215, 0.2315, 0.2231, 0.2336], device='cuda:0')
+# tensor([nan, nan, nan, nan], device='cuda:0') tensor([nan, nan, nan, nan], device='cuda:0')
+
 
 # tensor([527.1708, 498.0023, 528.9872, 499.4696], device='cuda:0') tensor([892.8487, 884.1351, 893.8290, 884.8680], device='cuda:0')
 # tensor([527.1708, 498.0023, 528.9872, 499.4696], device='cuda:0') tensor([892.8487, 884.1351, 893.8290, 884.8680], device='cuda:0')

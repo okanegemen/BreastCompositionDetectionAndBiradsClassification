@@ -22,7 +22,7 @@ class UNet(nn.Module):
         # self.outc = OutConv(64, n_classes)
         self.adp = nn.AdaptiveAvgPool2d(1)
         self.fc1 = nn.Linear(64,32)
-        self.silu = nn.SiLU(False)
+        self.silu = nn.SiLU(True)
         self.fc2 = nn.Linear(32,n_classes)
         self.soft_max = nn.LogSoftmax(dim = 1)
 
