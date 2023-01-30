@@ -24,7 +24,7 @@ warnings.filterwarnings("ignore")
 
 
 class efficientNet_v2L(nn.Module):
-    def __init__(self,in_channels,num_classes,pretrained=False):
+    def __init__(self,in_channels,pretrained=False):
         super(efficientNet_v2L,self).__init__()
 
         model = models.efficientnet_v2_l(pretrained = pretrained)
@@ -44,62 +44,56 @@ class efficientNet_v2L(nn.Module):
 
         body_second = modules[1:-1]
         self.body = nn.Sequential(*body_first,*body_second)
-        self.classifier = nn.Sequential(nn.Dropout(p=0.4,inplace=True),nn.Linear(in_features=1280, out_features=num_classes, bias=True))
 
       
     def forward(self,inputs):
         out = self.first_block_will_using(inputs)
 
         out = self.body(out)
-        
-        out = out.view(out.size(0),-1)
-        out = self.classifier(out)
-
-        return {"birads":out} 
-
-
-
-
-
-    
-
 
 
 
 class efficientNetv2s(nn.Module):
-    def __init__(self,in_channels=4,num_classes = 3, weight : bool = True):
+    def __init__(self,in_channels=4, weight : bool = False):
         super(efficientNetv2s,self).__init__()
 
         model = models.efficientnet_v2_s(pretrained = weight)
 
 
         modules = [module for module in model.children()]
+        modules_first = modules[0]
+        self.first_block_will_using = nn.Sequential(nn.Conv2d(in_channels=in_channels,out_channels= 24, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False),
+        
+                                                    nn.BatchNorm2d(24, eps=0.001, momentum=0.1, affine=True, track_running_stats=True),
+                                                    nn.SiLU(inplace=True)
+        )
+        
+        body_first = modules_first[1:]
 
-
-        self.first_block = modules[0][0]
-
-        self.first_block[0] = nn.Conv2d(in_channels, 24, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
-
-        self.body = modules[0][1:]
-
-
-        self.classifier = modules[-1]
-
-        self.classifier[-1] = nn.Sequential(nn.Dropout(p=0.4,inplace=True),nn.Linear(in_features=5120, out_features=num_classes, bias=True))
+        body_second = modules[1:-1]
+        self.body = nn.Sequential(*body_first,*body_second)
 
     def forward(self,inputs):
-        out = self.first_block(inputs)
+        out = self.first_block_will_using(inputs)
+
         out = self.body(out)
-
-        out = out.view(out.size(0),-1)
-        out = self.classifier(out)
-
-        return {"birads":out}
+        
+         
 
 
 
 
 
+
+
+
+
+# model = models.efficientnet_v2_s()
+
+# modules = [module for module in model.children()]
+# first_block = modules[0][0]
+# print(first_block)
+# print(modules[0])
 class Resnet18(nn.Module):
     def __init__(self,in_channels=4,num_classes=3,pretrained=True) :
         super(Resnet18,self).__init__()
@@ -512,7 +506,6 @@ class ConcatModel(nn.Module):
         
         concat2 = torch.cat((out3,out4),1)
         final = torch.cat((concat1,concat2),1)
-        final = torch.reshape(final,[1,256,600,600])
         features = self.featureExtrator(final)
 
         features = features.view(features.size(0),-1)
@@ -541,7 +534,7 @@ class AlexnetCat(nn.Module):
         self.se1 = SEBlock(n_in=256)
 
 
-        self.model = efficientNet_v2L(in_channels=256,num_classes=num_classes[0])
+        self.model = efficientNet_v2L(in_channels=256)
 
     def forward(self,inputs:dict):
 
@@ -567,10 +560,16 @@ class AlexnetCat(nn.Module):
 
         out = self.model(out)
 
+        out = out.view(out.size(0),-1)
+
+        out = self.dropout(out)
+        out = self.fc1(out)
+        out = self.fc2(out)
+        out = self.fc3(out)
         return out
 
 
-class AlexnetCat2(AlexnetCat):
+class AlexnetCat2(nn.Module):
 
     def __init__(self,in_channels=1,num_classes=[3,4,10]):
         super(AlexnetCat2,self).__init__()
@@ -583,7 +582,16 @@ class AlexnetCat2(AlexnetCat):
         self.se1 = SEBlock(n_in=256)
 
 
-        self.model = efficientNetv2s(in_channels=256,num_classes=num_classes[0])
+        self.model =   efficientNetv2s(in_channels=256)
+
+        self.dropout = nn.Dropout(p=0.4,inplace=True)
+        self.fc1 = nn.Linear(1280,512)
+
+        self.fc2 = nn.Linear(512,256)
+
+        self.fc3 = nn.Linear(256,128)
+
+        self.fc4 = nn.Linear(128,num_classes[0])
 
     def forward(self,inputs:dict):
 
@@ -591,7 +599,7 @@ class AlexnetCat2(AlexnetCat):
         input2 = inputs[:,1,:,:].unsqueeze(1)
         input3 = inputs[:,2,:,:].unsqueeze(1)
         input4 = inputs[:,3,:,:].unsqueeze(1)
-
+        
         out1 = self.img1(input1)
         out2 = self.img2(input2)
 
@@ -609,9 +617,13 @@ class AlexnetCat2(AlexnetCat):
 
         out = self.model(out)
 
+        out = out.view(out.size(0),-1)
+
+        out = self.dropout(out)
+        out = self.fc1(out)
+        out = self.fc2(out)
+        out = self.fc3(out)
         return out
-
-
 
 
 
@@ -620,9 +632,8 @@ if __name__ == "__main__":
 
     import os 
 
+    model = AlexnetCat2(1)
 
-
-    os.chdir("./modeller")
 
 
     with open("efficientNET.txt","w") as f:
