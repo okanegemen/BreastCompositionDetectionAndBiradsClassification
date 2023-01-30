@@ -67,7 +67,7 @@ def get_model():
 
         for param in model.parameters():
             cntr+=1
-            if cntr < 3:
+            if cntr < 44:
                 param.requires_grad = True
 
             elif cntr < lt:
@@ -152,12 +152,12 @@ def base():
         total_time_start = time.time()
 
         metrics = {"training":[],"test":[]}
-        image,_ = train_valDS[0]
-        for id,img in enumerate(image):
-            # print(img.min(),img.max())
-            T.ToPILImage()(img).show()
-            time.sleep(1)
-        input()
+        # image,_ = train_valDS[0]
+        # for id,img in enumerate(image):
+        #     # print(img.min(),img.max())
+        #     T.ToPILImage()(img).show()
+        #     time.sleep(1)
+        # input()
         testLoader = DataLoader(testDS,config.BATCH_SIZE,shuffle=False,num_workers=4,collate_fn=collate_fn)
 
 

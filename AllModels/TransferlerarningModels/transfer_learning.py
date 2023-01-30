@@ -27,7 +27,7 @@ class efficientNet_v2L(nn.Module):
     def __init__(self,in_channels,pretrained=False):
         super(efficientNet_v2L,self).__init__()
 
-        model = models.efficientnet_v2_l(pretrained = pretrained)
+        model = models.efficientnet_v2_l(weights = models.EfficientNet_V2_L_Weights.DEFAULT)
 
         modules = [module for module in model.children()]
 
@@ -51,13 +51,15 @@ class efficientNet_v2L(nn.Module):
 
         out = self.body(out)
 
+        return out
+
 
 
 class efficientNetv2s(nn.Module):
     def __init__(self,in_channels=4, weight : bool = False):
         super(efficientNetv2s,self).__init__()
 
-        model = models.efficientnet_v2_s(pretrained = weight)
+        model = models.efficientnet_v2_s(weights = models.EfficientNet_V2_S_Weights.DEFAULT)
 
 
         modules = [module for module in model.children()]
@@ -77,6 +79,7 @@ class efficientNetv2s(nn.Module):
         out = self.first_block_will_using(inputs)
 
         out = self.body(out)
+        return out
         
          
 
@@ -564,7 +567,9 @@ class AlexnetCat(nn.Module):
 
         out = self.dropout(out)
         out = self.fc1(out)
+        out = self.dropout(out)
         out = self.fc2(out)
+        out = self.dropout(out)
         out = self.fc3(out)
         return out
 
@@ -617,11 +622,13 @@ class AlexnetCat2(nn.Module):
 
         out = self.model(out)
 
-        out = out.view(out.size(0),-1)
+        out = out.squeeze()
 
         out = self.dropout(out)
         out = self.fc1(out)
+        out = self.dropout(out)
         out = self.fc2(out)
+        out = self.dropout(out)
         out = self.fc3(out)
         return out
 

@@ -44,7 +44,7 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader=None,fold="---")
             images, targets = torch.stack(images).to(config.DEVICE), torch.stack(targets).view(-1).to(config.DEVICE)
 
             with torch.cuda.amp.autocast():
-                outputs = model(images)["birads"]
+                outputs = model(images)
                 loss_train = lossFunc(outputs,targets)
             
             l1_regularization = 0.
@@ -102,7 +102,7 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader=None,fold="---")
                         images, targets = torch.stack(images).to(config.DEVICE), torch.stack(targets).view(-1).to(config.DEVICE)
                         if torch.cuda.is_available():
                             torch.cuda.synchronize()
-                        outputs = model(images)["birads"]
+                        outputs = model(images)
                         loss_val = lossFunc(outputs,targets)
 
                         val_loss.append(loss_val.item())
@@ -147,7 +147,7 @@ def testing(model, lossFunc, testLoader):
             if torch.cuda.is_available():
                 torch.cuda.synchronize()
 
-            outputs = model(images)["birads"]
+            outputs = model(images)
             loss_test = lossFunc(outputs,targets)
 
             test_loss.append(loss_test.item())
