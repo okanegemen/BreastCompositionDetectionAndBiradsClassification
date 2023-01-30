@@ -36,21 +36,22 @@ def get_transforms(train=True):
     p = config.PAD_PIXELS
     if train:
         transform = torch.nn.Sequential(
-                            # T.RandomErasing(scale=(0.01,0.01)),
+                            T.RandomErasing(scale=(0.01,0.02)),
+                            T.RandomErasing(scale=(0.01,0.01)),
                             # T.RandomInvert(),
                             # T.RandomRotation(4,expand=True),
                             # T.RandomAffine(3),
                             # T.RandomHorizontalFlip(),
-                            # T.RandomVerticalFlip(),
+                            T.RandomVerticalFlip(),
                             # T.LinearTransformation(),
-                            T.RandomAutocontrast(1.0),
+                            # T.RandomAutocontrast(1.0),
                             # T.RandomSolarize(0.3),
                             # T.RandomPerspective(0.1),
                        ).to(config.DEVICE)
 
         transform_cpu = T.Compose([
                             T.ToPILImage(),
-                            T.Pad((p,p,p,p)),
+                            # T.Pad((p,p,p,p)),
                             T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
                             T.RandomCrop((int(config.INPUT_IMAGE_HEIGHT-2),int(config.INPUT_IMAGE_WIDTH-2))),
                             # T.GaussianBlur(5),
@@ -116,7 +117,13 @@ class Dataset(datasets.VisionDataset):
         image = torch.stack([image.squeeze() for image in images.values()])
         if config.NORMALIZE:
                 self.norm_T(image)
+        if config.NUM_CHANNELS ==3:
+            image = image.unsqueeze(1)
+            images = torch.cat([image,image,image],dim=1)
+            images = torch.unbind(images)
 
+            birads = torch.stack([birads,birads,birads,birads])
+            birads = torch.unbind(birads)
         # target = {
         #     "birads":birads,
         #     "acr":acr
@@ -124,7 +131,7 @@ class Dataset(datasets.VisionDataset):
         #     "kadran_l":kadran_l,
         #     "names":images.keys()
         # }
-        return  image,birads
+        return  images,birads
 
 
     def loadImg(self,hastano):

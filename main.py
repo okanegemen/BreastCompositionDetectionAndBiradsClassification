@@ -1,7 +1,7 @@
 from DataLoaders.dataset import Dataset
 from DataLoaders.XLS_utils import XLS
-# from Pytorch_model.unet import UNet as load_model
-from AllModels.TransferlerarningModels.transfer_learning import AlexnetCat2 as load_model
+from torchvision.models import resnet18 as load_model,ResNet18_Weights
+# from AllModels.TransferlerarningModels.transfer_learning import AlexnetCat2 as load_model
 import DataLoaders.config as config
 import math
 import sys
@@ -27,6 +27,14 @@ import shutil
 def collate_fn(batch):
     return tuple(zip(*batch))
 
+def get_resnet18():
+    model = load_model(weights = ResNet18_Weights.IMAGENET1K_V1)
+    in_channels = model.fc.in_features
+    model.fc = torch.nn.Linear(in_channels,3)
+    for id,(name,param) in enumerate(model.named_parameters()):
+        print(name,param.requires_grad)
+
+    return model.to(config.DEVICE)
 def get_model():
     if config.LOAD_NEW_MODEL:
         # kwargs = dict({"num_classes":config.NUM_CLASSES})
@@ -107,7 +115,7 @@ def get_others(model):
 
     lossFunc = Loss()
     # opt = RMSprop(model.parameters(),lr=config.INIT_LR)
-    opt = Adam(model.parameters(), lr=config.INIT_LR)#,weight_decay=1e-6
+    opt = Adam(model.parameters(), lr=config.INIT_LR,weight_decay=1e-5)#,weight_decay=1e-6
     print("LossFunc:",lossFunc)
     print("Optimizer:",opt)
 
@@ -119,7 +127,7 @@ def save_model_and_metrics(model,fold_metrics):
     name = ""+model.__class__.__name__+"_"+config.DATE_FOLDER
     print(name)
     os.makedirs(os.path.join(config.SAVE_FOLDER,name))
-    torch.save(model.state_dict(), os.path.join(config.SAVE_FOLDER,name,model.__class__.__name__+".pth"))
+    torch.save(model, os.path.join(config.SAVE_FOLDER,name,model.__class__.__name__+".pth"))
 
     jso = json.dumps(fold_metrics)
     with open(os.path.join(config.SAVE_FOLDER,name,model.__class__.__name__+".json"),"w") as f:
@@ -139,8 +147,8 @@ def get_dataloaders(train_valDS,train_sampler,val_sampler):
     
 def base():
     test_acc = []
-    model = get_model()
-    loop = 1
+    model = get_resnet18()
+    loop = 2
     for _ in range(loop):
         imp.reload(config)
         train_valDS, testDS = get_dataset()

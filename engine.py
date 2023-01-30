@@ -40,11 +40,15 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader=None,fold="---")
         train_loss = []
         for idx_t,traindata in enumerate(tw :=qqdm(trainLoader, desc=format_str('bold', 'Description'))):
             images,targets = traindata
+            if config.NUM_CHANNELS==3:
+                images = sum(images,())
+                targets = sum(targets,())
             # send the input to the device
             images, targets = torch.stack(images).to(config.DEVICE), torch.stack(targets).view(-1).to(config.DEVICE)
 
+            # tw.set_description(f"{images.size(),targets.size()}")
             with torch.cuda.amp.autocast():
-                outputs = model(images)["birads"]
+                outputs = model(images)
                 loss_train = lossFunc(outputs,targets)
             
             l1_regularization = 0.
@@ -97,12 +101,14 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader=None,fold="---")
                 with torch.no_grad():
                     for idx_v, valData in enumerate(tw :=qqdm(valLoader, desc=format_str('bold', 'Description'))):
                         images, targets = valData
-
+                        if config.NUM_CHANNELS==3:
+                            images = sum(images,())
+                            targets = sum(targets,())
                         # send the input to the device
                         images, targets = torch.stack(images).to(config.DEVICE), torch.stack(targets).view(-1).to(config.DEVICE)
                         if torch.cuda.is_available():
                             torch.cuda.synchronize()
-                        outputs = model(images)["birads"]
+                        outputs = model(images)
                         loss_val = lossFunc(outputs,targets)
 
                         val_loss.append(loss_val.item())
@@ -114,10 +120,10 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader=None,fold="---")
 
         if epoch % config.SAVE_MODEL_PER_EPOCH == 0 or epoch == config.NUM_EPOCHS-1:
             imp.reload(config)
-            name = ""+model.__class__.__name__+"_"+str(fold)+"_"+config.DATE_FOLDER
+            name = ""+model.__class__.__name__+"_fold"+str(fold)+"_epoch"+str(epoch)+"_date"+config.DATE_FOLDER
             os.makedirs(os.path.join(config.MID_FOLDER,name))
             print("\nSaving Model State Dict...")
-            # torch.save(model.state_dict(), config.MID_FOLDER+"/"+name+"/"+name+".pth")
+            torch.save(model, config.MID_FOLDER+"/"+name+"/"+name+".pth")
 
         # accumulate predictions from all images
         torch.set_num_threads(n_threads)
@@ -141,13 +147,16 @@ def testing(model, lossFunc, testLoader):
 
         for idx,testdata in enumerate(tw :=qqdm(testLoader, desc=format_str('bold', 'Description'))):
             images,targets = testdata
+            if config.NUM_CHANNELS==3:
+                images = sum(images,())
+                targets = sum(targets,())
             # send the input to the device
             images, targets = torch.stack(images).to(config.DEVICE), torch.stack(targets).view(-1).to(config.DEVICE)
 
             if torch.cuda.is_available():
                 torch.cuda.synchronize()
 
-            outputs = model(images)["birads"]
+            outputs = model(images)
             loss_test = lossFunc(outputs,targets)
 
             test_loss.append(loss_test.item())

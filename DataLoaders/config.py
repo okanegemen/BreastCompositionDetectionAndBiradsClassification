@@ -7,7 +7,7 @@ print(f"Device: {DEVICE}")
 print(torch.__version__)
 
 
-MAIN_DIR = "/home/alican/Documents/"
+MAIN_DIR = "/home/robotik/Documents/"
 DATASET_DIR = os.path.join(MAIN_DIR,"Datasets/")
 TEKNOFEST = os.path.join(DATASET_DIR,"TEKNOFEST_MG_EGITIM_1")
 BASE_OUTPUT = os.path.join(MAIN_DIR,"yoloV5")
@@ -31,7 +31,7 @@ MODEL_INPUT_CONCATED = True
 FREEZE_LAYER = 0.5  # baştan 
 SKIP_FREEZE = [1,1,3] # 1 dondur 1 atla son 3 katmana karışma
 
-NUM_CHANNELS = 4
+NUM_CHANNELS = 3
 NUM_CLASSES = 3
 NUM_LEVELS = 1
 
@@ -40,7 +40,7 @@ L1regularization = False
 L2regularization = False
 
 SAVE_MODEL_PER_EPOCH = 10
-VALIDATE_PER_EPOCH = 5
+VALIDATE_PER_EPOCH = 2
 
 INPUT_IMAGE_WIDTH = 64 # yatay
 INPUT_IMAGE_HEIGHT = 64 # dikeyweights = models.EfficientNet_V2_L_Weights,pretrained = False
