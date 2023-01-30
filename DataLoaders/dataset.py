@@ -10,7 +10,7 @@ else:
     import DataLoaders.config as config
     import DataLoaders.fiximage as fiximage
 
-
+# import fiximage
 # from XLS_utils import XLS 
 # from utils import get_class_weights,get_sampler
 # import config
@@ -36,7 +36,6 @@ def get_transforms(train=True):
     p = config.PAD_PIXELS
     if train:
         transform = torch.nn.Sequential(
-                            T.RandomErasing(scale=(0.01,0.02)),
                             T.RandomErasing(scale=(0.01,0.01)),
                             # T.RandomInvert(),
                             # T.RandomRotation(4,expand=True),
@@ -53,7 +52,7 @@ def get_transforms(train=True):
                             T.ToPILImage(),
                             # T.Pad((p,p,p,p)),
                             T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
-                            T.RandomCrop((int(config.INPUT_IMAGE_HEIGHT-2),int(config.INPUT_IMAGE_WIDTH-2))),
+                            T.RandomCrop((int(config.INPUT_IMAGE_HEIGHT-5),int(config.INPUT_IMAGE_WIDTH-5))),
                             # T.GaussianBlur(5),
                             T.ToTensor(),
         ])
@@ -82,7 +81,7 @@ class Dataset(datasets.VisionDataset):
 
         self.dcm_names = ["LCC","LMLO","RCC","RMLO"]
 
-        self.norm_T = T.Compose([T.Normalize([0.1704, 0.1610, 0.1710, 0.1615], [0.2887, 0.2859, 0.2890, 0.2861],True)])
+        self.norm_T = T.Compose([T.Normalize([0.1525, 0.1502, 0.1543, 0.1522],[0.2215, 0.2315, 0.2231, 0.2336],True)])
         self.dataset = dataset
         self.dataset_name = config.TEKNOFEST
         self.transform,self.transform_cpu = get_transforms(train_transform)
@@ -106,7 +105,7 @@ class Dataset(datasets.VisionDataset):
         # kadran_l = torch.tensor(dicti["KADRAN BİLGİSİ (SOL)"])
 
         for name,image in images.items():
-            image = torch.from_numpy(image).float().unsqueeze(0)
+            image = torch.from_numpy(image).float().unsqueeze(0)/255.
 
             images[name] = self.transform(image)
             if self.train_transform:
@@ -152,6 +151,10 @@ class Dataset(datasets.VisionDataset):
                     image = np.pad(image, ((0, 0), (0,h-w)), 'constant')
                 except:
                     image = image[:,:h]
+            
+            clahe = cv2.createCLAHE(clipLimit = config.CLAHE_CLIP)
+            image = clahe.apply(image)
+
             images[dcm] = image
         return images
 

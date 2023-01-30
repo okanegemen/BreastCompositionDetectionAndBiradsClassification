@@ -32,16 +32,20 @@ def mask_external_contour(pixels):
     return  pixels
 
 def fit_image(X):
+
     w,h = X.shape
     ratio = (4*(1-config.CROP_RATIO)/10)
     X = X[int(config.INPUT_IMAGE_HEIGHT*ratio):int(w-config.INPUT_IMAGE_WIDTH*ratio), int(config.INPUT_IMAGE_HEIGHT*ratio):int(h-config.INPUT_IMAGE_HEIGHT*ratio)]
     X = true_norm(X)
     if X.mean()>120.:
         X = 255 - X
-        
+
     X = X*(X>23) #57
     X = mask_external_contour(X).astype(np.uint8)
-    X = cv2.equalizeHist(X)
+    # X = cv2.equalizeHist(X)
+    # clahe = cv2.createCLAHE(clipLimit = 2)
+    # X = clahe.apply(X)
+    
     return X
 
 if __name__ == "__main__":

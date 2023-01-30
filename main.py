@@ -1,7 +1,7 @@
 from DataLoaders.dataset import Dataset
 from DataLoaders.XLS_utils import XLS
-from torchvision.models import resnet18 as load_model,ResNet18_Weights
-# from AllModels.TransferlerarningModels.transfer_learning import AlexnetCat2 as load_model
+# from Pytorch_model.unet import UNet as load_model
+from AllModels.TransferlerarningModels.transfer_learning import Resnet18 as load_model
 import DataLoaders.config as config
 import math
 import sys
@@ -75,7 +75,7 @@ def get_model():
 
         for param in model.parameters():
             cntr+=1
-            if cntr < 42:
+            if cntr < 4:
                 param.requires_grad = True
 
             elif cntr < lt:
@@ -162,7 +162,7 @@ def base():
         metrics = {"training":[],"test":[]}
         # image,_ = train_valDS[0]
         # for id,img in enumerate(image):
-        #     print(img.min(),img.max())
+        #     # print(img.min(),img.max())
         #     T.ToPILImage()(img).show()
         #     time.sleep(1)
         # input()

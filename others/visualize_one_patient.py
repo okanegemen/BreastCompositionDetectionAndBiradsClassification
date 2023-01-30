@@ -9,6 +9,7 @@ import time
 import torch
 import imutils
 import fiximage
+import cv2
 
 MAIN_DIR = "/home/alican/Documents/"
 DATASET_DIR = os.path.join(MAIN_DIR,"Datasets/")
@@ -20,7 +21,7 @@ transform = T.Compose([
                 ])
 
 def norm():
-    Norm = T.Normalize([0.1704, 0.1610, 0.1710, 0.1615], [0.2887, 0.2859, 0.2890, 0.2861])
+    Norm = T.Normalize([0.1525, 0.1502, 0.1543, 0.1522],[0.2215, 0.2315, 0.2231, 0.2336])
     return torch.nn.Sequential(Norm)
 
 def norm_image(norm_imgs):
@@ -106,7 +107,7 @@ def four_image_show_norm(hastano,w = config.INPUT_IMAGE_HEIGHT,h = config.INPUT_
                 norm_img = np.pad(norm_img, ((0, 0), (0,h-w)), 'constant')
             except:
                 norm_img = norm_img[:,:h]
-        img = torch.from_numpy(norm_img.astype("float32")).float().unsqueeze(0)
+        img = torch.from_numpy(norm_img).unsqueeze(0).float()/ 255.
         images.append(img)
         norm_img =transform(img)
         norm_imgs.append(norm_img)
@@ -162,17 +163,17 @@ def four_concat(dcm_folders, dcm_names = ["LMLO","LCC","RMLO","RCC"]):
         c.show()
         time.sleep(1)
 if __name__ == "__main__":
-    # hastanos = os.listdir(TEKNOFEST)
+    hastanos = os.listdir(TEKNOFEST)
     # hastanos = hastano_from_txt()
-    # k = 122
-    # for hastano in hastanos[k:]:
-    x = four_image_show(845282976)
-    y,norm_imgs = four_image_show_norm(845282976)
-    images = norm_image(norm_imgs)
-    z = get_concat_h(x,y)
-    t = get_concat_h(z,images)
+    k = 0
+    for hastano in hastanos[k:]:
+        x = four_image_show(hastano)
+        y,norm_imgs = four_image_show_norm(hastano)
+        images = norm_image(norm_imgs)
+        z = get_concat_h(x,y)
+        t = get_concat_h(z,images)
 
-    t.show()
-    # print(k,hastano)
-    # input()
-    # k += 1
+        t.show()
+        print(k,hastano)
+        input()
+        k += 1

@@ -20,7 +20,7 @@ transform = T.Compose([
                 ])
 
 def norm():
-    Norm = T.Normalize([0.1846, 0.1545, 0.1837, 0.1523], [0.2831, 0.2638, 0.2830, 0.2616])
+    Norm = T.Normalize([0.1525, 0.1502, 0.1543, 0.1522],[0.2215, 0.2315, 0.2231, 0.2336])
     return torch.nn.Sequential(Norm)
 
 def norm_image(norm_imgs):
@@ -102,7 +102,7 @@ def four_image_show_norm(hastano,w = config.INPUT_IMAGE_HEIGHT,h = config.INPUT_
                 norm_img = np.pad(norm_img, ((0, 0), (0,h-w)), 'constant')
             except:
                 pass
-        img = torch.from_numpy(norm_img.astype("float32")).float().unsqueeze(0)
+        img = torch.from_numpy(norm_img.astype("float32")).float().unsqueeze(0)/255.
         images.append(img)
         norm_img =transform(img)
         norm_imgs.append(norm_img)
