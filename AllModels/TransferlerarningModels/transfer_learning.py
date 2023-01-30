@@ -101,7 +101,7 @@ class Resnet18(nn.Module):
     def __init__(self,in_channels=4,num_classes=3,pretrained=True) :
         super(Resnet18,self).__init__()
 
-        model = models.resnet18(pretrained=pretrained)
+        model = models.resnet18(weights = models.ResNet18_Weights.DEFAULT)
 
         modules = [module for module in model.children()]
 
@@ -129,7 +129,7 @@ class Resnet34(nn.Module):
 
         super(Resnet34,self).__init__()
 
-        model = models.resnet34(pretrained = False)
+        model = models.resnet34(weights = models.ResNet34_Weights.DEFAULT)
 
         modules = [module for module in model.children()]
 
@@ -151,8 +151,7 @@ class Resnet34(nn.Module):
         out = out.view(out.size(0),-1)
         out = self.last(out)
 
-
-        return {"birads":out}
+        return out
 
 
 
@@ -164,7 +163,7 @@ class ResNet101(nn.Module):
 
         super(ResNet101,self).__init__()
 
-        model = models.resnet101(weights = models.ResNet101_Weights,pretrained = False)
+        model = models.resnet101(weights = models.ResNet101_Weights.DEFAULT)
 
         self.first_layer = nn.Sequential(nn.Conv2d(in_channels=in_channels,out_channels=64,kernel_size=7,stride=2,padding=3,bias=False),
                                     nn.BatchNorm2d(64),
@@ -190,8 +189,7 @@ class ResNet101(nn.Module):
         out = out.view(out.size(0),-1)
         out = self.fc(out)
 
-
-        return {"birads":out}
+        return out
 
 
 
@@ -199,7 +197,7 @@ class Resnet50(nn.Module):
     def __init__(self,in_channels):
         super(Resnet50,self).__init__()
 
-        model = models.resnet50()
+        model = models.resnet50(weights = models.ResNet50_Weights.DEFAULT)
 
         module_list = [module for module in model.children()]
 
@@ -222,12 +220,12 @@ class Resnet50(nn.Module):
 
         out = out.view(out.size(0),-1)
         birads = self.birads(out)
-        composition = self.composition(out)
-        kadran = self.kadran(out)
+        # composition = self.composition(out)
+        # kadran = self.kadran(out)
 
 
 
-        return {"birads":birads , "acr":composition ,"kadran":kadran} 
+        return birads
 
 
 

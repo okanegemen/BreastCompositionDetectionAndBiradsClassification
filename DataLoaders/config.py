@@ -28,7 +28,7 @@ BATCH_SIZE = 16
 ELIMINATE_CORRUPTED_PATIENTS = True # only for train
 
 MODEL_INPUT_CONCATED = True
-FREEZE_LAYER = 0.7  # baştan 
+FREEZE_LAYER = 0.6  # baştan 
 SKIP_FREEZE = [1,1,3] # 1 dondur 1 atla son 3 katmana karışma
 
 NUM_CHANNELS = 4

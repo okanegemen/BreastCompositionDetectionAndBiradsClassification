@@ -1,7 +1,7 @@
 from DataLoaders.dataset import Dataset
 from DataLoaders.XLS_utils import XLS
 # from Pytorch_model.unet import UNet as load_model
-from AllModels.TransferlerarningModels.transfer_learning import AlexnetCat2 as load_model
+from AllModels.TransferlerarningModels.transfer_learning import Resnet34 as load_model
 import DataLoaders.config as config
 import math
 import sys
@@ -67,7 +67,7 @@ def get_model():
 
         for param in model.parameters():
             cntr+=1
-            if cntr < 44:
+            if cntr < 4:
                 param.requires_grad = True
 
             elif cntr < lt:

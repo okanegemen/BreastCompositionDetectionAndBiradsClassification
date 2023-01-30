@@ -42,7 +42,6 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader=None,fold="---")
             images,targets = traindata
             # send the input to the device
             images, targets = torch.stack(images).to(config.DEVICE), torch.stack(targets).view(-1).to(config.DEVICE)
-
             with torch.cuda.amp.autocast():
                 outputs = model(images)
                 loss_train = lossFunc(outputs,targets)
