@@ -7,7 +7,7 @@ import os
 import sys
 import imp
 
-def focal_loss(outputs,targets, alpha=1, gamma=2):
+def focal_loss(outputs,targets, alpha=1, gamma=3):
     ce_loss = torch.nn.functional.cross_entropy(outputs, targets, reduction='none') # important to add reduction='none' to keep per-batch-item loss
     pt = torch.exp(-ce_loss)
     focal_loss = (alpha * (1-pt)**gamma * ce_loss).mean()

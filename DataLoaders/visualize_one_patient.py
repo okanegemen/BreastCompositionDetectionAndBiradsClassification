@@ -160,14 +160,14 @@ def four_concat(dcm_folders, dcm_names = ["LMLO","LCC","RMLO","RCC"]):
 if __name__ == "__main__":
     hastanos = os.listdir(TEKNOFEST)#hastano_from_txt()
     k = 0
-    for hastano in hastanos[k:]:
-        x = four_image_show(hastano)
-        y,norm_imgs = four_image_show_norm(hastano)
-        images = norm_image(norm_imgs)
-        z = get_concat_h(x,y)
-        t = get_concat_h(z,images)
+    # for hastano in hastanos[k:]:
+    x = four_image_show(822670976)
+    y,norm_imgs = four_image_show_norm(822670976)
+    images = norm_image(norm_imgs)
+    z = get_concat_h(x,y)
+    t = get_concat_h(z,images)
 
-        t.show()
-        print(k,hastano)
-        input()
-        k += 1
+    t.show()
+    # print(k,hastano)
+    # input()
+    # k += 1
