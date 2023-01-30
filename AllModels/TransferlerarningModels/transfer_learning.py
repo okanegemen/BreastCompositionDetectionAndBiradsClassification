@@ -88,7 +88,6 @@ class efficientNetv2s(nn.Module):
         
          
 
-model = efficientNetv2s(4)
 
 
 
@@ -590,7 +589,7 @@ class AlexnetCat(nn.Module):
 class AlexnetCat2(nn.Module):
 
     def __init__(self,in_channels=1,num_classes=[3,4,10]):
-        super(AlexnetCat,self).__init__()
+        super(AlexnetCat2,self).__init__()
 
         self.img1 = FeaturesImg(in_channels)
         self.img2 = FeaturesImg(in_channels)
@@ -645,23 +644,22 @@ class AlexnetCat2(nn.Module):
 
 
 
-# if __name__ == "__main__":
+if __name__ == "__main__":
 
 
-#     import os 
+    import os 
+
+    model = AlexnetCat2(1)
 
 
 
-#     os.chdir("./modeller")
+    with open("efficientNET.txt","w") as f:
 
+        for module in model.children():
 
-    # with open("efficientNET.txt","w") as f:
+            f.write(str(module)+"\n")
 
-    #     for module in model.children():
-
-    #         f.write(str(module)+"\n")
-
-    #     f.close()
+        f.close()
 
 
 
