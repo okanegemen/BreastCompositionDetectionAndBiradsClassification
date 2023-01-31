@@ -118,7 +118,7 @@ class Resnet18(nn.Module):
         out = out.view(out.size(0),-1)
         out = self.classifier(out)
 
-        return {"birads":out}
+        return out
 
 
 
@@ -278,7 +278,7 @@ class SEBlock(nn.Module):
 
 class ConcatModel(nn.Module):
 
-    def __init__(self,inplanes,model):
+    def __init__(self,model,inplanes=3):
         super(ConcatModel,self).__init__()
 
         self.inplanes = inplanes
@@ -306,14 +306,33 @@ class ConcatModel(nn.Module):
             self.composition = nn.Linear(buffer[0].in_features,4)
             self.kadran = nn.Linear(buffer[0].in_features,10)
 
-            
+    def forward(self,inputs):
 
-
-
-
-
+        input1 = inputs[:,0,:,:].unsqueeze(1)
+        input2 = inputs[:,1,:,:].unsqueeze(1)
+        input3 = inputs[:,2,:,:].unsqueeze(1)
+        input4 = inputs[:,3,:,:].unsqueeze(1)
         
-        
+        input1 = self.img1(input1)
+        input2 = self.img1(input2)
+        input3 = self.img1(input3)
+        input4 = self.img1(input4)
+
+        concat1 = torch.cat((input1,input2),1)
+        concat2 = torch.cat((input3,input4),1)
+        final = torch.cat((concat1,concat2),1)
+
+        features = self.featureExtrator(final)
+
+        features = features.view(features.size(0),-1)
+
+
+        birads = self.birads(features)
+        # composition = self.composition(features)
+        # kadran = self.kadran(features)
+
+
+        return birads#{"birads":birads , "acr":composition ,"kadran":kadran}
         
     def _modifyFirstLayertakeBody(self,model):
         module_list = [modules for modules in model.children()]
@@ -488,36 +507,6 @@ class ConcatModel(nn.Module):
 
 
         return new_buffer,linear
-            
-
-
-        
-        
-          
-    def forward(self,input1,input2,input3,input4):
-        out1 = self.img1(input1)
-
-        out2 = self.img2(input2)
-
-        out3 = self.img3(input3)
-
-        out4 = self.img4(input4)
-
-        concat1 = torch.cat((out1,out2),1)
-        
-        concat2 = torch.cat((out3,out4),1)
-        final = torch.cat((concat1,concat2),1)
-        features = self.featureExtrator(final)
-
-        features = features.view(features.size(0),-1)
-
-
-        birads = self.birads(features)
-        composition = self.composition(features)
-        kadran = self.kadran(features)
-
-
-        return {"birads":birads , "acr":composition ,"kadran":kadran}
 
 
 
@@ -546,9 +535,7 @@ class AlexnetCat(nn.Module):
 
         out1 = self.img1(input1)
         out2 = self.img2(input2)
-
         out3 = self.img3(input3)
-
         out4 = self.img4(input4)
 
         cat1 = torch.cat((out1,out2),dim=1)
@@ -628,6 +615,7 @@ class AlexnetCat2(nn.Module):
         out = self.fc2(out)
         out = self.dropout(out)
         out = self.fc3(out)
+        out = self.fc4(out)
         return out
 
 

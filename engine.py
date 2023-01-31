@@ -7,7 +7,7 @@ import os
 import sys
 import imp
 
-def focal_loss(outputs,targets, alpha=1, gamma=3):
+def focal_loss(outputs,targets, alpha=1, gamma=2):
     ce_loss = torch.nn.functional.cross_entropy(outputs, targets, reduction='none') # important to add reduction='none' to keep per-batch-item loss
     pt = torch.exp(-ce_loss)
     focal_loss = (alpha * (1-pt)**gamma * ce_loss).mean()
@@ -38,9 +38,10 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader=None,fold="---")
         # loop over the training set
 
         train_loss = []
-        for idx_t,traindata in enumerate(tw :=qqdm(trainLoader, desc=format_str('bold', 'Description'))):
+        for idx_t,traindata in enumerate(tw :=qqdm(trainLoader, desc=format_str('bold', 'Description'),disable=True)):
             images,targets = traindata
             # send the input to the device
+            print([image.size() for image in images])
             images, targets = torch.stack(images).to(config.DEVICE), torch.stack(targets).view(-1).to(config.DEVICE)
             with torch.cuda.amp.autocast():
                 outputs = model(images)
@@ -113,10 +114,10 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader=None,fold="---")
 
         if epoch % config.SAVE_MODEL_PER_EPOCH == 0 or epoch == config.NUM_EPOCHS-1:
             imp.reload(config)
-            name = ""+model.__class__.__name__+"_"+str(fold)+"_"+config.DATE_FOLDER
+            name = ""+model.__class__.__name__+"_"+str(fold)+"_epoch"+str(epoch)+"_"+config.DATE_FOLDER
             os.makedirs(os.path.join(config.MID_FOLDER,name))
             print("\nSaving Model State Dict...")
-            # torch.save(model.state_dict(), config.MID_FOLDER+"/"+name+"/"+name+".pth")
+            torch.save(model.state_dict(), config.MID_FOLDER+"/"+name+"/"+name+".pth")
 
         # accumulate predictions from all images
         torch.set_num_threads(n_threads)

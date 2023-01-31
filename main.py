@@ -1,7 +1,9 @@
 from DataLoaders.dataset import Dataset
 from DataLoaders.XLS_utils import XLS
 # from Pytorch_model.unet import UNet as load_model
-from AllModels.TransferlerarningModels.transfer_learning import Resnet34 as load_model
+from AllModels.TransferlerarningModels.transfer_learning import ConcatModel as load_model
+from torchvision.models import resnet34 as upload_model
+
 import DataLoaders.config as config
 import math
 import sys
@@ -30,7 +32,7 @@ def collate_fn(batch):
 def get_model():
     if config.LOAD_NEW_MODEL:
         # kwargs = dict({"num_classes":config.NUM_CLASSES})
-        model = load_model()
+        model = load_model(upload_model())
         
         # model.conv1.in_channels = config.NUM_CHANNELS
         # model.fc.out_features = config.NUM_CLASSES
@@ -39,10 +41,12 @@ def get_model():
         # print(model)
 
     else:
-        model = load_model(4)
-        print("############# Previous weights loaded. ###################")
-        model.load_state_dict(torch.load(config.MODEL_PATH))
-        
+        try:
+            model = load_model()
+            print("############# Previous weights loaded. ###################")
+            model.load_state_dict(torch.load(config.MODEL_PATH))
+        except:
+            model = torch.load(config.MODEL_PATH) 
         # print(model.classifier)
         # model.classifier = torch.nn.Linear(1024,config.NUM_CLASSES)
 
@@ -67,7 +71,7 @@ def get_model():
 
         for param in model.parameters():
             cntr+=1
-            if cntr < 4:
+            if cntr < 44:
                 param.requires_grad = True
 
             elif cntr < lt:
@@ -94,14 +98,6 @@ def get_model():
         for id,(name,param) in enumerate(model.named_parameters()):
             print(name,param.requires_grad)
     return model.to(config.DEVICE)
-
-def get_dataset():
-    train,test = XLS().return_datasets()
-
-    train = Dataset(train,True)
-    test = Dataset(test,False)
-
-    return train, test
 
 def get_others(model):
 
@@ -143,46 +139,72 @@ def base():
     loop = 1
     for _ in range(loop):
         imp.reload(config)
-        train_valDS, testDS = get_dataset()
+        total_time_start = time.time()
         lossFunc, opt= get_others(model)
 
-        print(f"[INFO] found {len(train_valDS)} examples in the training set...")
-        print(f"[INFO] found {len(testDS)} examples in the test set...")
         
-        total_time_start = time.time()
+        data = XLS()
+        train_val,test = data.return_datasets()
+        train_val_indexs,train_val = data.train_val_k_fold(train_val)
 
+        print(f"[INFO] found {len(train_val)} examples in the train and val set...")
+        print(f"[INFO] found {len(test)} examples in the test set...")        
+        
+        test = Dataset(test,False)
+        testLoader = DataLoader(test,config.BATCH_SIZE,shuffle=False,num_workers=4,collate_fn=collate_fn)
         metrics = {"training":[],"test":[]}
+
+        for fold,(train_idxs,val_idxs) in enumerate(zip(train_val_indexs["train"],train_val_indexs["val"])):
+            print(f'FOLD {fold}')
+            print('--------------------------------')
+
+            train = Dataset(train_val.iloc[train_idxs],True)
+            val = Dataset(train_val.iloc[val_idxs],False)
+            print(f"[INFO] found {len(train)} examples in the train set...")
+            print(f"[INFO] found {len(val)} examples in the val set...")
+
+            trainLoader = DataLoader(train,sampler=train.sampler, batch_size=config.BATCH_SIZE, num_workers=0,collate_fn=collate_fn)
+            valLoader = DataLoader(val, shuffle=False, batch_size=config.BATCH_SIZE, num_workers=0,collate_fn=collate_fn)
+
+            training_metrics = training(model,trainLoader,lossFunc,opt,valLoader,fold)
+            metrics["training"].append(training_metrics)
+
+            test_metrics = testing(model,lossFunc,testLoader)
+            metrics["test"].append(test_metrics)
+        
+
+
+
         # image,_ = train_valDS[0]
         # for id,img in enumerate(image):
         #     # print(img.min(),img.max())
         #     T.ToPILImage()(img).show()
         #     time.sleep(1)
         # input()
-        testLoader = DataLoader(testDS,config.BATCH_SIZE,shuffle=False,num_workers=4,collate_fn=collate_fn)
 
 
-        if config.K_FOLD:
-            kfold = KFold(n_splits=config.CV_K_FOLDS, shuffle=True)
-            for fold, (train_ids, valid_ids) in enumerate(kfold.split(train_valDS)):
-                print(f'FOLD {fold}')
-                print('--------------------------------')
-                train_sampler = SubsetRandomSampler(train_ids)
-                val_sampler = SubsetRandomSampler(valid_ids)
-                trainLoader, valLoader = get_dataloaders(train_valDS,train_sampler, val_sampler)
+        # if config.K_FOLD:
+        #     kfold = KFold(n_splits=config.CV_K_FOLDS, shuffle=True)
+        #     for fold, (train_ids, valid_ids) in enumerate(kfold.split(train_val)):
+        #         print(f'FOLD {fold}')
+        #         print('--------------------------------')+
+        #         train_sampler = SubsetRandomSampler(train_ids)
+        #         val_sampler = SubsetRandomSampler(valid_ids)
+        #         trainLoader, valLoader = get_dataloaders(train_val,train_sampler, val_sampler)
 
-                training_metrics = training(model,trainLoader,lossFunc,opt,valLoader,fold)
-                metrics["training"].append(training_metrics)
+        #         training_metrics = training(model,trainLoader,lossFunc,opt,valLoader,fold)
+        #         metrics["training"].append(training_metrics)
 
-                test_metrics = testing(model,lossFunc,testLoader)
-                metrics["test"].append(test_metrics)
+        #         test_metrics = testing(model,lossFunc,testLoader)
+        #         metrics["test"].append(test_metrics)
         
-        else:
-            trainLoader = DataLoader(train_valDS,config.BATCH_SIZE,sampler=train_valDS.sampler,num_workers=4,collate_fn=collate_fn)
-            training_metrics = training(model,trainLoader,lossFunc,opt)
-            metrics["training"].append(training_metrics)
+        # else:
+        #     trainLoader = DataLoader(train_val,config.BATCH_SIZE,sampler=train_val.sampler,num_workers=4,collate_fn=collate_fn)
+        #     training_metrics = training(model,trainLoader,lossFunc,opt)
+        #     metrics["training"].append(training_metrics)
 
-            test_metrics = testing(model,lossFunc,testLoader)
-            metrics["test"].append(test_metrics)
+        #     test_metrics = testing(model,lossFunc,testLoader)
+        #     metrics["test"].append(test_metrics)
 
         test_acc.append(metrics["test"][-1]["acc"])
 

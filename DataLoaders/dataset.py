@@ -38,15 +38,15 @@ def get_transforms(train=True):
         transform = torch.nn.Sequential(
                             T.RandomErasing(scale=(0.01,0.01)),
                             # T.RandomInvert(),
-                            # T.RandomRotation(4,expand=True),
+                            T.RandomRotation(4,expand=True),
                             # T.RandomAffine(3),
                             # T.RandomHorizontalFlip(),
                             # T.RandomVerticalFlip(),
                             # T.LinearTransformation(),
                             # T.RandomAutocontrast(1.0),
                             # T.RandomSolarize(0.3),
-                            # T.RandomPerspective(0.1),
-                       ).to(config.DEVICE)
+                            T.RandomPerspective(0.1),
+                       )
 
         transform_cpu = T.Compose([
                             T.ToPILImage(),
@@ -94,6 +94,19 @@ class Dataset(datasets.VisionDataset):
         class_weights = get_class_weights(self.ids)
         self.sampler = get_sampler(self.ids,class_weights)
 
+        self.class0_T = torch.nn.Sequential(
+                                # T.RandomErasing(scale=(0.01,0.01)),
+                                # T.RandomInvert(),
+                                # T.RandomRotation(4,expand=True),
+                                # T.RandomAffine(3),
+                                # T.RandomHorizontalFlip(),
+                                # T.RandomVerticalFlip(),
+                                # T.LinearTransformation(),
+                                T.RandomAutocontrast(0.1),
+                                # T.RandomSolarize(0.3),
+                                # T.RandomPerspective(0.1),
+                            )
+
     def __getitem__(self, index: int):
         data = self.dataset.iloc[index,:]
         dicti = data.to_dict()
@@ -105,11 +118,13 @@ class Dataset(datasets.VisionDataset):
         # kadran_l = torch.tensor(dicti["KADRAN BİLGİSİ (SOL)"])
 
         for name,image in images.items():
-            image = torch.from_numpy(image).float().unsqueeze(0)/255.
+            images[name] = torch.from_numpy(image).float().unsqueeze(0)/255.
 
-            images[name] = self.transform(image)
+            images[name] = self.transform(images[name])
             if self.train_transform:
                 images[name] = self.transform_cpu(images[name].to("cpu"))
+                if birads == 0:
+                    images[name] = self.class0_T(images[name])
 
         images = {key:image for key,image in images.items()}
 

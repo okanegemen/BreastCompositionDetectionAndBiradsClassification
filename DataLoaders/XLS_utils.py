@@ -2,6 +2,8 @@ import os
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import ast
+from torch.utils.data import SubsetRandomSampler
+from sklearn.model_selection import KFold
 import glob
 # import config
 if __name__ == "__main__":
@@ -27,7 +29,20 @@ class XLS():
             self.df, _ = train_test_split(self.df,test_size=config.CROP_DATA,shuffle=True,stratify=self.df["BIRADS KATEGORİSİ"],random_state=44)
 
         remain_set, test = train_test_split(self.df,test_size=test_split,shuffle=True,stratify=self.df["BIRADS KATEGORİSİ"],random_state=44)
+        self.length = len(remain_set)
         return remain_set, test
+
+    def train_val_k_fold(self,df:pd.DataFrame):
+        df = df.reset_index(drop=True)
+        indices = [*list(df.index)]
+        kfold = KFold(n_splits=config.CV_K_FOLDS, shuffle=True)
+        indexs = {"train":[],"val":[]}
+        for fold, (train_ids, valid_ids) in enumerate(kfold.split(indices)):
+            train_sampler = [*SubsetRandomSampler(train_ids)]
+            val_sampler = [*SubsetRandomSampler(valid_ids)]
+            indexs["train"].append(train_sampler)
+            indexs["val"].append(val_sampler)
+        return indexs,df
 
     def teknofest_data(self):
         info_filename = glob.glob(os.path.join(config.TEKNOFEST,'*.xlsx'))[0]
