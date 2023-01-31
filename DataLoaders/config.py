@@ -7,7 +7,7 @@ print(f"Device: {DEVICE}")
 print(torch.__version__)
 
 
-MAIN_DIR = "/home/alican/Documents/"
+MAIN_DIR = "/home/robotik/Documents/"
 DATASET_DIR = os.path.join(MAIN_DIR,"Datasets/")
 TEKNOFEST = os.path.join(DATASET_DIR,"TEKNOFEST_MG_EGITIM_1")
 BASE_OUTPUT = os.path.join(MAIN_DIR,"yoloV5")
@@ -33,6 +33,7 @@ SKIP_FREEZE = [1,1,3] # 1 dondur 1 atla son 3 katmana karışma
 
 NUM_CHANNELS = 3
 NUM_CLASSES = 3
+CAT_IMAGES = False
 NUM_LEVELS = 1
 
 CLAHE_CLIP = 2

@@ -29,6 +29,15 @@ import shutil
 def collate_fn(batch):
     return tuple(zip(*batch))
 
+def get_resnet18():
+    model = load_model()
+    in_channels = model.fc.in_features
+    model.fc = torch.nn.Linear(in_channels,3)
+    for id,(name,param) in enumerate(model.named_parameters()):
+        print(name,param.requires_grad)
+
+    return model.to(config.DEVICE)
+
 def get_model():
     if config.LOAD_NEW_MODEL:
         # kwargs = dict({"num_classes":config.NUM_CLASSES})
@@ -50,16 +59,6 @@ def get_model():
         # print(model.classifier)
         # model.classifier = torch.nn.Linear(1024,config.NUM_CLASSES)
 
-        # for id,child in enumerate(model.children()):
-        #     if id==0:
-        #         for param in child.parameters():
-        #             param.requires_grad=True
-        #     elif id<int(config.FREEZE_LAYER*ct-1):
-        #         for param in child.parameters():
-        #             param.requires_grad = False
-        #     if id==(ct-1):
-        #         for param in child.parameters():
-        #             param.requires_grad=True
     if config.FREEZE_LAYER>0:
         ct = 0
         for param in model.parameters():
@@ -95,15 +94,15 @@ def get_model():
     #                 param.requires_grad = False
     #                 print(name)
 
-        for id,(name,param) in enumerate(model.named_parameters()):
-            print(name,param.requires_grad)
+    for id,(name,param) in enumerate(model.named_parameters()):
+        print(name,param.requires_grad)
     return model.to(config.DEVICE)
 
 def get_others(model):
 
     lossFunc = Loss()
     # opt = RMSprop(model.parameters(),lr=config.INIT_LR)
-    opt = Adam(model.parameters(), lr=config.INIT_LR,weight_decay=1e-5)#,weight_decay=1e-6
+    opt = Adam(model.parameters(), lr=config.INIT_LR,weight_decay=5e-5)#,weight_decay=1e-6
     print("LossFunc:",lossFunc)
     print("Optimizer:",opt)
 
@@ -115,7 +114,7 @@ def save_model_and_metrics(model,fold_metrics):
     name = ""+model.__class__.__name__+"_"+config.DATE_FOLDER
     print(name)
     os.makedirs(os.path.join(config.SAVE_FOLDER,name))
-    torch.save(model.state_dict(), os.path.join(config.SAVE_FOLDER,name,model.__class__.__name__+".pth"))
+    torch.save(model, os.path.join(config.SAVE_FOLDER,name,model.__class__.__name__+".pth"))
 
     jso = json.dumps(fold_metrics)
     with open(os.path.join(config.SAVE_FOLDER,name,model.__class__.__name__+".json"),"w") as f:
@@ -135,8 +134,8 @@ def get_dataloaders(train_valDS,train_sampler,val_sampler):
     
 def base():
     test_acc = []
-    model = get_model()
-    loop = 1
+    model = get_model() #load_model().to(config.DEVICE)
+    loop = 2
     for _ in range(loop):
         imp.reload(config)
         total_time_start = time.time()

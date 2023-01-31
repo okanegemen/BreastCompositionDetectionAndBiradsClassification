@@ -24,10 +24,10 @@ warnings.filterwarnings("ignore")
 
 
 class efficientNet_v2L(nn.Module):
-    def __init__(self,in_channels,pretrained=False):
+    def __init__(self,in_channels,num_classes,pretrained=False):
         super(efficientNet_v2L,self).__init__()
 
-        model = models.efficientnet_v2_l(weights = models.EfficientNet_V2_L_Weights.DEFAULT)
+        model = models.efficientnet_v2_l(pretrained = pretrained)
 
         modules = [module for module in model.children()]
 
@@ -50,9 +50,17 @@ class efficientNet_v2L(nn.Module):
         out = self.first_block_will_using(inputs)
 
         out = self.body(out)
+        
+        out = out.view(out.size(0),-1)
+        out = self.classifier(out)
 
-        return out
+        return {"birads":out} 
 
+
+
+
+
+    
 
 
 class efficientNetv2s(nn.Module):
@@ -98,7 +106,7 @@ class efficientNetv2s(nn.Module):
 # print(first_block)
 # print(modules[0])
 class Resnet18(nn.Module):
-    def __init__(self,in_channels=4,num_classes=3,pretrained=True) :
+    def __init__(self,in_channels=4,num_classes=3) :
         super(Resnet18,self).__init__()
 
         model = models.resnet18(weights = models.ResNet18_Weights.DEFAULT)
@@ -526,6 +534,15 @@ class AlexnetCat(nn.Module):
 
         self.model = efficientNet_v2L(in_channels=256)
 
+        self.dropout = nn.Dropout(p=0.4,inplace=True)
+        self.fc1 = nn.Linear(1280,512)
+
+        self.fc2 = nn.Linear(512,256)
+
+        self.fc3 = nn.Linear(256,128)
+
+        self.fc4 = nn.Linear(128,num_classes[0])
+
     def forward(self,inputs:dict):
 
         input1 = inputs[:,0,:,:].unsqueeze(1)
@@ -556,6 +573,8 @@ class AlexnetCat(nn.Module):
         out = self.fc2(out)
         out = self.dropout(out)
         out = self.fc3(out)
+        out = self.dropout(out)
+        out = self.fc4(out)
         return out
 
 
@@ -607,7 +626,7 @@ class AlexnetCat2(nn.Module):
 
         out = self.model(out)
 
-        out = out.squeeze()
+        out = out.view(out.size(0),-1)
 
         out = self.dropout(out)
         out = self.fc1(out)
@@ -615,6 +634,7 @@ class AlexnetCat2(nn.Module):
         out = self.fc2(out)
         out = self.dropout(out)
         out = self.fc3(out)
+        out = self.dropout(out)
         out = self.fc4(out)
         return out
 

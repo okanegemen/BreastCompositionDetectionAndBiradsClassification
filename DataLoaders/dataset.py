@@ -132,6 +132,13 @@ class Dataset(datasets.VisionDataset):
         if config.NORMALIZE:
                 self.norm_T(image)
 
+        if config.NUM_CHANNELS ==3 and config.CAT_IMAGES:
+            image = image.unsqueeze(1)
+            image = torch.cat([image,image,image],dim=1)
+            image = torch.unbind(image)
+
+            birads = torch.stack([birads,birads,birads,birads])
+            birads = torch.unbind(birads)
         # target = {
         #     "birads":birads,
         #     "acr":acr
