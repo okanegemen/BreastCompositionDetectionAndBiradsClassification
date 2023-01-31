@@ -132,13 +132,6 @@ class Dataset(datasets.VisionDataset):
         if config.NORMALIZE:
                 self.norm_T(image)
 
-        if config.NUM_CHANNELS ==3 and config.CAT_IMAGES:
-            image = image.unsqueeze(1)
-            image = torch.cat([image,image,image],dim=1)
-            image = torch.unbind(image)
-
-            birads = torch.stack([birads,birads,birads,birads])
-            birads = torch.unbind(birads)
         # target = {
         #     "birads":birads,
         #     "acr":acr
@@ -146,6 +139,27 @@ class Dataset(datasets.VisionDataset):
         #     "kadran_l":kadran_l,
         #     "names":images.keys()
         # }
+        if config.INPUT_CONCATED and config.NUM_CHANNELS==1:
+            # 4 channel for 4 view and single image & single birads
+            # this is for models that in_channel is 4 and gets only one image for each patient
+            pass
+        else:
+            # This is for models which have 4 small models at top of the whole image
+            # 4 image for each patient
+            if config.NUM_CHANNELS ==3: 
+                # each image is rgb
+                image = image.unsqueeze(1)
+                image = torch.cat([image,image,image],dim=1)
+                image = torch.unbind(image)
+
+                birads = torch.stack([birads,birads,birads,birads])
+                birads = torch.unbind(birads)
+
+            elif config.NUM_CHANNELS == 1:
+                # each image is gray scale
+                image = image.unsqueeze(1)
+                image = torch.unbind(image)
+
         return  image,birads
 
 

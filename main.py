@@ -1,8 +1,8 @@
 from DataLoaders.dataset import Dataset
 from DataLoaders.XLS_utils import XLS
 # from Pytorch_model.unet import UNet as load_model
-from AllModels.TransferlerarningModels.transfer_learning import ConcatModel as load_model
-from torchvision.models import resnet34 as upload_model
+from AllModels.TransferlerarningModels.transfer_learning import Resnet50 as load_model
+from torchvision.models import resnet34 as upload_model,ResNet34_Weights as upload_weight
 
 import DataLoaders.config as config
 import math
@@ -41,7 +41,7 @@ def get_resnet18():
 def get_model():
     if config.LOAD_NEW_MODEL:
         # kwargs = dict({"num_classes":config.NUM_CLASSES})
-        model = load_model(upload_model())
+        model = load_model() # upload_model(weights=upload_weight.DEFAULT)
         
         # model.conv1.in_channels = config.NUM_CHANNELS
         # model.fc.out_features = config.NUM_CLASSES

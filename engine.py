@@ -38,13 +38,17 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader=None,fold="---")
         # loop over the training set
 
         train_loss = []
-        for idx_t,traindata in enumerate(tw :=qqdm(trainLoader, desc=format_str('bold', 'Description'),disable=True)):
-            images,targets = traindata
-            if config.NUM_CHANNELS==3 and config.CAT_IMAGES:
-                images = sum(images,())
-                targets = sum(targets,())
+        for idx_t,(images,targets) in enumerate(tw :=qqdm(trainLoader, desc=format_str('bold', 'Description'))):
+
+            if config.INPUT_CONCATED==False:
+                if config.NUM_CHANNELS==3:
+                    images = sum(images,())
+                    targets = sum(targets,())
+                
+                elif config.NUM_CHANNELS==1:
+                    images = sum(images,())
+
             # send the input to the device
-            print([image.size() for image in images])
             images, targets = torch.stack(images).to(config.DEVICE), torch.stack(targets).view(-1).to(config.DEVICE)
             # tw.set_description(f"{images.size(),targets.size()}")
             with torch.cuda.amp.autocast():
@@ -101,9 +105,7 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader=None,fold="---")
                 with torch.no_grad():
                     for idx_v, valData in enumerate(tw :=qqdm(valLoader, desc=format_str('bold', 'Description'))):
                         images, targets = valData
-                        if config.NUM_CHANNELS==3:
-                            images = sum(images,())
-                            targets = sum(targets,())
+
                         # send the input to the device
                         images, targets = torch.stack(images).to(config.DEVICE), torch.stack(targets).view(-1).to(config.DEVICE)
                         if torch.cuda.is_available():
@@ -147,9 +149,7 @@ def testing(model, lossFunc, testLoader):
 
         for idx,testdata in enumerate(tw :=qqdm(testLoader, desc=format_str('bold', 'Description'))):
             images,targets = testdata
-            if config.NUM_CHANNELS==3:
-                images = sum(images,())
-                targets = sum(targets,())
+
             # send the input to the device
             images, targets = torch.stack(images).to(config.DEVICE), torch.stack(targets).view(-1).to(config.DEVICE)
 

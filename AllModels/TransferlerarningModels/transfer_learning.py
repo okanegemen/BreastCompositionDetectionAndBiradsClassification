@@ -167,7 +167,7 @@ class Resnet34(nn.Module):
 
 
 class ResNet101(nn.Module):
-    def __init__(self,in_channels,num_classes=3) :
+    def __init__(self,in_channels=4,num_classes=3) :
 
         super(ResNet101,self).__init__()
 
@@ -202,11 +202,14 @@ class ResNet101(nn.Module):
 
 
 class Resnet50(nn.Module):
-    def __init__(self,in_channels):
+    def __init__(self,pretrained=True,in_channels=4):
         super(Resnet50,self).__init__()
 
-        model = models.resnet50(weights = models.ResNet50_Weights.DEFAULT)
-
+        if pretrained:
+            model = models.resnet50(weights = models.ResNet50_Weights.DEFAULT)
+        else:
+            model = models.resnet50()
+    
         module_list = [module for module in model.children()]
 
 
@@ -215,25 +218,38 @@ class Resnet50(nn.Module):
 
         body = module_list[1:-1]
         self.featureExtracture = nn.Sequential(first_layer,*body)
-        self.birads = nn.Linear(in_features=2048,out_features=3)
-        self.composition = nn.Linear(in_features=2048,out_features=4)
-        self.kadran = nn.Linear(in_features=2048,out_features=10)
-
         
+        self.dropout = nn.Dropout(p=0.4,inplace=True)
 
+        self.b1 = nn.Linear(in_features=2048,out_features=512)
+        self.b2 = nn.Linear(in_features=512,out_features=128)
+        self.b3 = nn.Linear(in_features=128,out_features=3)
+
+        self.c1 = nn.Linear(in_features=2048,out_features=512)
+        self.c2 = nn.Linear(in_features=512,out_features=128)
+        self.c3 = nn.Linear(in_features=128,out_features=4)
+        
+        self.k1 = nn.Linear(in_features=2048,out_features=512)
+        self.k2 = nn.Linear(in_features=512,out_features=128)
+        self.k3 = nn.Linear(in_features=128,out_features=10)
 
     def forward(self,input):
 
         out = self.featureExtracture(input)
 
         out = out.view(out.size(0),-1)
-        birads = self.birads(out)
+        b_out = self.b1(out)
+        b_out = self.dropout(b_out)
+        b_out = self.b2(b_out)
+        b_out = self.dropout(b_out)
+        b_out = self.b3(b_out)
+
         # composition = self.composition(out)
         # kadran = self.kadran(out)
 
 
 
-        return birads
+        return b_out
 
 
 
@@ -290,9 +306,6 @@ class ConcatModel(nn.Module):
         super(ConcatModel,self).__init__()
 
         self.inplanes = inplanes
-        
-
-        
 
         self.img1 = FeaturesImg(inplanes)
         self.img2 = FeaturesImg(inplanes)
@@ -316,15 +329,15 @@ class ConcatModel(nn.Module):
 
     def forward(self,inputs):
 
-        input1 = inputs[:,0,:,:].unsqueeze(1)
-        input2 = inputs[:,1,:,:].unsqueeze(1)
-        input3 = inputs[:,2,:,:].unsqueeze(1)
-        input4 = inputs[:,3,:,:].unsqueeze(1)
+        input1 = inputs[:,0,:,:,:].squeeze(1)
+        input2 = inputs[:,1,:,:,:].squeeze(1)
+        input3 = inputs[:,2,:,:,:].squeeze(1)
+        input4 = inputs[:,3,:,:,:].squeeze(1)
         
         input1 = self.img1(input1)
-        input2 = self.img1(input2)
-        input3 = self.img1(input3)
-        input4 = self.img1(input4)
+        input2 = self.img2(input2)
+        input3 = self.img3(input3)
+        input4 = self.img4(input4)
 
         concat1 = torch.cat((input1,input2),1)
         concat2 = torch.cat((input3,input4),1)

@@ -7,7 +7,7 @@ print(f"Device: {DEVICE}")
 print(torch.__version__)
 
 
-MAIN_DIR = "/home/robotik/Documents/"
+MAIN_DIR = "/home/alican/Documents/"
 DATASET_DIR = os.path.join(MAIN_DIR,"Datasets/")
 TEKNOFEST = os.path.join(DATASET_DIR,"TEKNOFEST_MG_EGITIM_1")
 BASE_OUTPUT = os.path.join(MAIN_DIR,"yoloV5")
@@ -27,14 +27,11 @@ BATCH_SIZE = 64
 
 ELIMINATE_CORRUPTED_PATIENTS = True # only for train
 
-MODEL_INPUT_CONCATED = False
 FREEZE_LAYER = 0.  # baştan 
-SKIP_FREEZE = [1,1,3] # 1 dondur 1 atla son 3 katmana karışma
 
-NUM_CHANNELS = 3
+NUM_CHANNELS = 1
 NUM_CLASSES = 3
-CAT_IMAGES = False
-NUM_LEVELS = 1
+INPUT_CONCATED = True
 
 CLAHE_CLIP = 2
 FOCAL_LOSS = True
