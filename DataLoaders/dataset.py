@@ -33,7 +33,6 @@ import time
 import imutils
 
 def get_transforms(train=True):
-    p = config.PAD_PIXELS
     if train:
         transform = torch.nn.Sequential(
                             T.RandomErasing(scale=(0.01,0.01)),
@@ -45,7 +44,7 @@ def get_transforms(train=True):
                             # T.LinearTransformation(),
                             # T.RandomAutocontrast(1.0),
                             # T.RandomSolarize(0.3),
-                            T.RandomPerspective(0.1),
+                            # T.RandomPerspective(0.1),
                        )
 
         transform_cpu = T.Compose([
@@ -139,26 +138,17 @@ class Dataset(datasets.VisionDataset):
         #     "kadran_l":kadran_l,
         #     "names":images.keys()
         # }
-        if config.INPUT_CONCATED and config.NUM_CHANNELS==1:
-            # 4 channel for 4 view and single image & single birads
-            # this is for models that in_channel is 4 and gets only one image for each patient
-            pass
-        else:
-            # This is for models which have 4 small models at top of the whole image
-            # 4 image for each patient
-            if config.NUM_CHANNELS ==3: 
-                # each image is rgb
-                image = image.unsqueeze(1)
-                image = torch.cat([image,image,image],dim=1)
-                image = torch.unbind(image)
+   
+        # This is for models which have 4 small models at top of the whole image
+        # 4 image for each patient
+        if config.CAT_MODEL: 
+            # each image is rgb
+            image = image.unsqueeze(1)
+            image = torch.cat([image,image,image],dim=1)
+            # image = torch.unbind(image)
 
-                birads = torch.stack([birads,birads,birads,birads])
-                birads = torch.unbind(birads)
-
-            elif config.NUM_CHANNELS == 1:
-                # each image is gray scale
-                image = image.unsqueeze(1)
-                image = torch.unbind(image)
+            # birads = torch.stack([birads,birads,birads,birads])
+            # birads = torch.unbind(birads)
 
         return  image,birads
 

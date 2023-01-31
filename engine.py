@@ -39,17 +39,13 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader=None,fold="---")
 
         train_loss = []
         for idx_t,(images,targets) in enumerate(tw :=qqdm(trainLoader, desc=format_str('bold', 'Description'))):
-
-            if config.INPUT_CONCATED==False:
-                if config.NUM_CHANNELS==3:
-                    images = sum(images,())
-                    targets = sum(targets,())
-                
-                elif config.NUM_CHANNELS==1:
-                    images = sum(images,())
-
+            # if config.CAT_MODEL:
+            #     if config.NUM_CHANNELS==3:
+            #         images = sum(images,())
+            #         targets = sum(targets,())
             # send the input to the device
             images, targets = torch.stack(images).to(config.DEVICE), torch.stack(targets).view(-1).to(config.DEVICE)
+           
             # tw.set_description(f"{images.size(),targets.size()}")
             with torch.cuda.amp.autocast():
                 outputs = model(images)
@@ -120,7 +116,7 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader=None,fold="---")
                         tw.set_infos({"loss":"%.4f"%temp_loss,
                                     **scores_val.metrics()})
 
-        if epoch % config.SAVE_MODEL_PER_EPOCH == 0 or epoch == config.NUM_EPOCHS-1:
+        if fold % config.SAVE_MODEL_PER_FOLD == 0:
             imp.reload(config)
             name = ""+model.__class__.__name__+"_fold"+str(fold)+"_epoch"+str(epoch)+"_date"+config.DATE_FOLDER
             os.makedirs(os.path.join(config.MID_FOLDER,name))

@@ -17,12 +17,6 @@ warnings.filterwarnings("ignore")
 
 
 
-
-
-
-
-
-
 class efficientNet_v2L(nn.Module):
     def __init__(self,in_channels,num_classes,pretrained=False):
         super(efficientNet_v2L,self).__init__()
@@ -304,15 +298,15 @@ class ConcatModel(nn.Module):
 
     def __init__(self,model,inplanes=3):
         super(ConcatModel,self).__init__()
-
+        nn.Dropout()
         self.inplanes = inplanes
-
         self.img1 = FeaturesImg(inplanes)
         self.img2 = FeaturesImg(inplanes)
         self.img3 = FeaturesImg(inplanes)
         self.img4 = FeaturesImg(inplanes)
+        self.ch_drop = nn.Dropout2d(p=0.5)
 
-        firstBlock,firstBody,body  = self._modifyFirstLayertakeBody(model=model)
+        firstBlock,firstBody,body  = self._modifyFirstLayertakeBody(model=model,in_channels = 256)
         if  firstBody !=0 :
             self.featureExtrator = nn.Sequential(*firstBlock,*firstBody,*body)
         else:self.featureExtrator = nn.Sequential(*firstBlock,*body)
@@ -343,6 +337,8 @@ class ConcatModel(nn.Module):
         concat2 = torch.cat((input3,input4),1)
         final = torch.cat((concat1,concat2),1)
 
+        final = self.ch_drop(final)
+
         features = self.featureExtrator(final)
 
         features = features.view(features.size(0),-1)
@@ -355,7 +351,7 @@ class ConcatModel(nn.Module):
 
         return birads#{"birads":birads , "acr":composition ,"kadran":kadran}
         
-    def _modifyFirstLayertakeBody(self,model):
+    def _modifyFirstLayertakeBody(self,model,in_channels=256):
         module_list = [modules for modules in model.children()]
 
         temp = module_list[0]
@@ -420,7 +416,7 @@ class ConcatModel(nn.Module):
                 if firstBlock[0].bias is not None:
 
 
-                    firstBlock[0] = nn.Conv2d(in_channels = 256,
+                    firstBlock[0] = nn.Conv2d(in_channels = in_channels,
                                                 out_channels=firstBlock[0].out_channels,
                                                 kernel_size = firstBlock[0].kernel_size,
                                                 stride = firstBlock[0].stride,
@@ -429,7 +425,7 @@ class ConcatModel(nn.Module):
                                                 groups =firstBlock[0].groups,
                                                 bias=True)
                 else:
-                    firstBlock[0] = nn.Conv2d(in_channels = 256,
+                    firstBlock[0] = nn.Conv2d(in_channels = in_channels,
                                                 out_channels=firstBlock[0].out_channels,
                                                 kernel_size = firstBlock[0].kernel_size,
                                                 stride = firstBlock[0].stride,
@@ -443,7 +439,7 @@ class ConcatModel(nn.Module):
 
                 if firstBlock[0][0].bias is not None:
 
-                    firstBlock[0][0] = nn.Conv2d(in_channels = 256,
+                    firstBlock[0][0] = nn.Conv2d(in_channels = in_channels,
                                                     out_channels=firstBlock[0][0].out_channels,
                                                     kernel_size=firstBlock[0][0].kernel_size,
                                                     stride = firstBlock[0][0].stride,
@@ -452,7 +448,7 @@ class ConcatModel(nn.Module):
                                                     groups = firstBlock[0][0].groups,
                                                     bias=True)
                 else:
-                    firstBlock[0][0] = nn.Conv2d(in_channels = 256,
+                    firstBlock[0][0] = nn.Conv2d(in_channels = in_channels,
                                                     out_channels=firstBlock[0][0].out_channels,
                                                     kernel_size=firstBlock[0][0].kernel_size,
                                                     stride = firstBlock[0][0].stride,
@@ -466,7 +462,7 @@ class ConcatModel(nn.Module):
             if firstBlock[0].conv.bias is not None:
 
 
-                firstBlock[0].conv = nn.Conv2d(256,
+                firstBlock[0].conv = nn.Conv2d(in_channels,
                                                 firstBlock[0].conv.out_channels,
                                                 firstBlock[0].conv.kernel_size,
                                                 firstBlock[0].conv.stride,
@@ -476,7 +472,7 @@ class ConcatModel(nn.Module):
                                                 bias = True
                                                 )
             else:
-                firstBlock[0].conv = nn.Conv2d(256,
+                firstBlock[0].conv = nn.Conv2d(in_channels,
                                             firstBlock[0].conv.out_channels,
                                             firstBlock[0].conv.kernel_size,
                                             firstBlock[0].conv.stride,

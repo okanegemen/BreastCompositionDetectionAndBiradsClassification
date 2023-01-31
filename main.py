@@ -1,7 +1,7 @@
 from DataLoaders.dataset import Dataset
 from DataLoaders.XLS_utils import XLS
 # from Pytorch_model.unet import UNet as load_model
-from AllModels.TransferlerarningModels.transfer_learning import Resnet50 as load_model
+from AllModels.TransferlerarningModels.transfer_learning import ConcatModel as load_model
 from torchvision.models import resnet34 as upload_model,ResNet34_Weights as upload_weight
 
 import DataLoaders.config as config
@@ -11,6 +11,7 @@ import os
 from torch.nn import CrossEntropyLoss as Loss
 from torch.optim import Adam,RMSprop,NAdam
 from torch.utils.data import DataLoader,SubsetRandomSampler
+from sklearn.model_selection import KFold
 from torchvision import transforms as T
 import matplotlib.pyplot as plt
 import torch
@@ -19,7 +20,7 @@ import time
 from qqdm import qqdm, format_str
 from DataLoaders.scores import scores
 import numpy 
-from sklearn.model_selection import KFold
+
 from engine import testing,training
 import json
 import imp
@@ -41,7 +42,7 @@ def get_resnet18():
 def get_model():
     if config.LOAD_NEW_MODEL:
         # kwargs = dict({"num_classes":config.NUM_CLASSES})
-        model = load_model() # upload_model(weights=upload_weight.DEFAULT)
+        model = load_model( upload_model(weights=upload_weight.DEFAULT)) # upload_model(weights=upload_weight.DEFAULT)
         
         # model.conv1.in_channels = config.NUM_CHANNELS
         # model.fc.out_features = config.NUM_CLASSES
@@ -135,8 +136,7 @@ def get_dataloaders(train_valDS,train_sampler,val_sampler):
 def base():
     test_acc = []
     model = get_model() #load_model().to(config.DEVICE)
-    loop = 2
-    for _ in range(loop):
+    for _ in range(config.TEKRAR):
         imp.reload(config)
         total_time_start = time.time()
         lossFunc, opt= get_others(model)
@@ -168,8 +168,8 @@ def base():
             training_metrics = training(model,trainLoader,lossFunc,opt,valLoader,fold)
             metrics["training"].append(training_metrics)
 
-            test_metrics = testing(model,lossFunc,testLoader)
-            metrics["test"].append(test_metrics)
+        test_metrics = testing(model,lossFunc,testLoader)
+        metrics["test"].append(test_metrics)
         
 
 
@@ -180,30 +180,13 @@ def base():
         #     T.ToPILImage()(img).show()
         #     time.sleep(1)
         # input()
+        if config.CV_K_FOLDS < 2:
+            trainLoader = DataLoader(train_val,config.BATCH_SIZE,sampler=train_val.sampler,num_workers=4,collate_fn=collate_fn)
+            training_metrics = training(model,trainLoader,lossFunc,opt)
+            metrics["training"].append(training_metrics)
 
-
-        # if config.K_FOLD:
-        #     kfold = KFold(n_splits=config.CV_K_FOLDS, shuffle=True)
-        #     for fold, (train_ids, valid_ids) in enumerate(kfold.split(train_val)):
-        #         print(f'FOLD {fold}')
-        #         print('--------------------------------')+
-        #         train_sampler = SubsetRandomSampler(train_ids)
-        #         val_sampler = SubsetRandomSampler(valid_ids)
-        #         trainLoader, valLoader = get_dataloaders(train_val,train_sampler, val_sampler)
-
-        #         training_metrics = training(model,trainLoader,lossFunc,opt,valLoader,fold)
-        #         metrics["training"].append(training_metrics)
-
-        #         test_metrics = testing(model,lossFunc,testLoader)
-        #         metrics["test"].append(test_metrics)
-        
-        # else:
-        #     trainLoader = DataLoader(train_val,config.BATCH_SIZE,sampler=train_val.sampler,num_workers=4,collate_fn=collate_fn)
-        #     training_metrics = training(model,trainLoader,lossFunc,opt)
-        #     metrics["training"].append(training_metrics)
-
-        #     test_metrics = testing(model,lossFunc,testLoader)
-        #     metrics["test"].append(test_metrics)
+            test_metrics = testing(model,lossFunc,testLoader)
+            metrics["test"].append(test_metrics)
 
         test_acc.append(metrics["test"][-1]["acc"])
 
