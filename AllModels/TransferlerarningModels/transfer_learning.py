@@ -126,7 +126,7 @@ class Resnet18(nn.Module):
         out = out.view(out.size(0),-1)
         out = self.classifier(out)
 
-        return {"birads":out}
+        return out
 
 
 
@@ -545,6 +545,15 @@ class AlexnetCat(nn.Module):
 
         self.model = efficientNet_v2L(in_channels=256)
 
+        self.dropout = nn.Dropout(p=0.4,inplace=True)
+        self.fc1 = nn.Linear(1280,512)
+
+        self.fc2 = nn.Linear(512,256)
+
+        self.fc3 = nn.Linear(256,128)
+
+        self.fc4 = nn.Linear(128,num_classes[0])
+
     def forward(self,inputs:dict):
 
         input1 = inputs[:,0,:,:].unsqueeze(1)
@@ -577,6 +586,8 @@ class AlexnetCat(nn.Module):
         out = self.fc2(out)
         out = self.dropout(out)
         out = self.fc3(out)
+        out = self.dropout(out)
+        out = self.fc4(out)
         return out
 
 
@@ -628,7 +639,7 @@ class AlexnetCat2(nn.Module):
 
         out = self.model(out)
 
-        out = out.squeeze()
+        out = out.view(out.size(0),-1)
 
         out = self.dropout(out)
         out = self.fc1(out)
@@ -636,6 +647,8 @@ class AlexnetCat2(nn.Module):
         out = self.fc2(out)
         out = self.dropout(out)
         out = self.fc3(out)
+        out = self.dropout(out)
+        out = self.fc4(out)
         return out
 
 

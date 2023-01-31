@@ -1,7 +1,7 @@
 from DataLoaders.dataset import Dataset
 from DataLoaders.XLS_utils import XLS
 # from Pytorch_model.unet import UNet as load_model
-from AllModels.TransferlerarningModels.transfer_learning import Resnet18 as load_model
+from AllModels.TransferlerarningModels.transfer_learning import AlexnetCat2 as load_model
 import DataLoaders.config as config
 import math
 import sys
@@ -28,13 +28,14 @@ def collate_fn(batch):
     return tuple(zip(*batch))
 
 def get_resnet18():
-    model = load_model(weights = ResNet18_Weights.IMAGENET1K_V1)
+    model = load_model()
     in_channels = model.fc.in_features
     model.fc = torch.nn.Linear(in_channels,3)
     for id,(name,param) in enumerate(model.named_parameters()):
         print(name,param.requires_grad)
 
     return model.to(config.DEVICE)
+
 def get_model():
     if config.LOAD_NEW_MODEL:
         # kwargs = dict({"num_classes":config.NUM_CLASSES})
@@ -47,23 +48,10 @@ def get_model():
         # print(model)
 
     else:
-        model = load_model(4)
+        model = load_model()
         print("############# Previous weights loaded. ###################")
         model.load_state_dict(torch.load(config.MODEL_PATH))
-        
-        # print(model.classifier)
-        # model.classifier = torch.nn.Linear(1024,config.NUM_CLASSES)
 
-        # for id,child in enumerate(model.children()):
-        #     if id==0:
-        #         for param in child.parameters():
-        #             param.requires_grad=True
-        #     elif id<int(config.FREEZE_LAYER*ct-1):
-        #         for param in child.parameters():
-        #             param.requires_grad = False
-        #     if id==(ct-1):
-        #         for param in child.parameters():
-        #             param.requires_grad=True
     if config.FREEZE_LAYER>0:
         ct = 0
         for param in model.parameters():
@@ -75,7 +63,7 @@ def get_model():
 
         for param in model.parameters():
             cntr+=1
-            if cntr < 4:
+            if cntr < 44:
                 param.requires_grad = True
 
             elif cntr < lt:
@@ -99,8 +87,8 @@ def get_model():
     #                 param.requires_grad = False
     #                 print(name)
 
-        for id,(name,param) in enumerate(model.named_parameters()):
-            print(name,param.requires_grad)
+    for id,(name,param) in enumerate(model.named_parameters()):
+        print(name,param.requires_grad)
     return model.to(config.DEVICE)
 
 def get_dataset():
@@ -115,7 +103,7 @@ def get_others(model):
 
     lossFunc = Loss()
     # opt = RMSprop(model.parameters(),lr=config.INIT_LR)
-    opt = Adam(model.parameters(), lr=config.INIT_LR,weight_decay=1e-5)#,weight_decay=1e-6
+    opt = Adam(model.parameters(), lr=config.INIT_LR,weight_decay=5e-5)#,weight_decay=1e-6
     print("LossFunc:",lossFunc)
     print("Optimizer:",opt)
 
@@ -147,7 +135,7 @@ def get_dataloaders(train_valDS,train_sampler,val_sampler):
     
 def base():
     test_acc = []
-    model = get_resnet18()
+    model = get_model() #load_model().to(config.DEVICE)
     loop = 2
     for _ in range(loop):
         imp.reload(config)

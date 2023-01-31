@@ -28,11 +28,12 @@ BATCH_SIZE = 16
 ELIMINATE_CORRUPTED_PATIENTS = True # only for train
 
 MODEL_INPUT_CONCATED = True
-FREEZE_LAYER = 0.4  # baştan 
+FREEZE_LAYER = 0.7  # baştan 
 SKIP_FREEZE = [1,1,3] # 1 dondur 1 atla son 3 katmana karışma
 
 NUM_CHANNELS = 3
 NUM_CLASSES = 3
+CAT_IMAGES = False
 NUM_LEVELS = 1
 
 CLAHE_CLIP = 2
@@ -47,7 +48,7 @@ INPUT_IMAGE_WIDTH = 100 # yatay
 INPUT_IMAGE_HEIGHT = 100 # dikeyweights = models.EfficientNet_V2_L_Weights,pretrained = False
 CROP_RATIO = 0.9
 PAD_PIXELS = 7
-NORMALIZE = False
+NORMALIZE = True
 PRINT_FREQ = None
 
 

@@ -41,7 +41,7 @@ def get_transforms(train=True):
                             # T.RandomRotation(4,expand=True),
                             # T.RandomAffine(3),
                             # T.RandomHorizontalFlip(),
-                            T.RandomVerticalFlip(),
+                            # T.RandomVerticalFlip(),
                             # T.LinearTransformation(),
                             # T.RandomAutocontrast(1.0),
                             # T.RandomSolarize(0.3),
@@ -59,7 +59,7 @@ def get_transforms(train=True):
     else:
         transform = T.Compose([
                             T.ToPILImage(),
-                            T.Pad((p,p,p,p)),
+                            # T.Pad((p,p,p,p)),
                             T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
                             # T.RandomCrop((int(config.INPUT_IMAGE_HEIGHT*config.CROP_RATIO),int(config.INPUT_IMAGE_WIDTH*config.CROP_RATIO))),
                             # T.CenterCrop((int(config.INPUT_IMAGE_HEIGHT*config.CROP_RATIO),int(config.INPUT_IMAGE_WIDTH*config.CROP_RATIO))),
@@ -116,10 +116,11 @@ class Dataset(datasets.VisionDataset):
         image = torch.stack([image.squeeze() for image in images.values()])
         if config.NORMALIZE:
                 self.norm_T(image)
-        if config.NUM_CHANNELS ==3:
+
+        if config.NUM_CHANNELS ==3 and config.CAT_IMAGES:
             image = image.unsqueeze(1)
-            images = torch.cat([image,image,image],dim=1)
-            images = torch.unbind(images)
+            image = torch.cat([image,image,image],dim=1)
+            image = torch.unbind(image)
 
             birads = torch.stack([birads,birads,birads,birads])
             birads = torch.unbind(birads)
@@ -130,7 +131,7 @@ class Dataset(datasets.VisionDataset):
         #     "kadran_l":kadran_l,
         #     "names":images.keys()
         # }
-        return  images,birads
+        return  image,birads
 
 
     def loadImg(self,hastano):

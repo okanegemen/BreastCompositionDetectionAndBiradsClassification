@@ -40,12 +40,11 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader=None,fold="---")
         train_loss = []
         for idx_t,traindata in enumerate(tw :=qqdm(trainLoader, desc=format_str('bold', 'Description'))):
             images,targets = traindata
-            if config.NUM_CHANNELS==3:
+            if config.NUM_CHANNELS==3 and config.CAT_IMAGES:
                 images = sum(images,())
                 targets = sum(targets,())
             # send the input to the device
             images, targets = torch.stack(images).to(config.DEVICE), torch.stack(targets).view(-1).to(config.DEVICE)
-
             # tw.set_description(f"{images.size(),targets.size()}")
             with torch.cuda.amp.autocast():
                 outputs = model(images)
