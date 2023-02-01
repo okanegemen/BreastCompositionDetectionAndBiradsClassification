@@ -25,11 +25,11 @@ FREEZE_LAYER = 0.                           # baştan % kaç layer ın freeze ed
 NUM_CHANNELS = 1                            # dicomların kaç channel olarak yükleneceğini belirler
 NUM_CLASSES = 3
 
-TEKRAR = 15                                  # aynı eğitimi aynı modeli devam ettirerek kaç defa eğitileceği
-CV_K_FOLDS = 3                              # 2 den küçük sayı girilirse sadece train ve test yapılır
-NUM_EPOCHS = 3                              # her fold da olacak epoch sayısı
+TEKRAR = 10                                  # aynı eğitimi aynı modeli devam ettirerek kaç defa eğitileceği
+CV_K_FOLDS = 4                              # 2 den küçük sayı girilirse sadece train ve test yapılır
+NUM_EPOCHS = 4                              # her fold da olacak epoch sayısı
 INIT_LR = 0.00005                            # learning rate
-BATCH_SIZE = 64 
+BATCH_SIZE = 32
 
 CAT_MODEL = True
 
@@ -44,8 +44,8 @@ FOCAL_LOSS = True                           # cross entropy üzerine focal loss 
 L1regularization = False
 L2regularization = False
 
-INPUT_IMAGE_WIDTH = 80                      # yatay
-INPUT_IMAGE_HEIGHT = 80                     # dikey
+INPUT_IMAGE_WIDTH = 128                      # yatay
+INPUT_IMAGE_HEIGHT = 128                     # dikey
 
 CROP_RATIO = 0.9                            # Resmin kırpılma oranına etki eder
 

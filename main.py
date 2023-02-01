@@ -110,7 +110,7 @@ def get_others(model):
 
     lossFunc = Loss()
     # opt = RMSprop(model.parameters(),lr=config.INIT_LR)
-    opt = Adam(model.parameters(), lr=config.INIT_LR,weight_decay=2e-5)#,weight_decay=1e-6
+    opt = Adam(model.parameters(), lr=config.INIT_LR,weight_decay=1e-4)#,weight_decay=1e-6
     print("LossFunc:",lossFunc)
     print("Optimizer:",opt)
 
@@ -177,6 +177,7 @@ def base():
 
         test_metrics = testing(model,lossFunc,testLoader)
         metrics["test"].append(test_metrics)
+        print(f"--------Passed time: {int(time.time()-total_time_start)/60}-------")
         
 
 
