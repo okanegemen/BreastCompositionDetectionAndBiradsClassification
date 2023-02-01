@@ -32,6 +32,36 @@ import cv2
 import time
 import imutils
 
+# Albumentations Colab Code
+# https://colab.research.google.com/github/albumentations-team/albumentations_examples/blob/colab/example.ipynb#scrollTo=k4vy47S3vTt2
+def alb_transforms(train=True):
+    if train:
+        transform = A.Compose([
+            A.RandomToneCurve(),                        #koyuları daha koyu beyazları daha beyaz yapar
+            A.RandomBrightness(),
+            A.HorizontalFlip(p=0.5),
+            A.RandomBrightnessContrast(p=0.2),        
+            A.RandomCrop(width=256, height=256),
+            A.ShiftScaleRotate(p=0.5),                  # resmi dönderir dönderirken boş kalan kısma resmi yansıtır
+            A.OpticalDistortion(),                      # resmin merkezinden distort_limit e göre dışa doğru gerdirir
+            A.GridDistortion(),
+            A.HueSaturationValue(),
+            A.Blur(blur_limit=3),
+            A.Transpose(),
+            A.RandomRotate90(),
+            A.CLAHE(),
+            A.GaussNoise(),
+            A.Flip(),
+            A.MotionBlur(p=.2),
+            A.MedianBlur(blur_limit=3, p=0.1),
+            A.PiecewiseAffine(p=0.3),
+            A.Sharpen(),
+            A.Emboss(),
+    ])
+    else:
+        transform = 
+    
+
 def get_transforms(train=True):
     if train:
         transform = torch.nn.Sequential(
