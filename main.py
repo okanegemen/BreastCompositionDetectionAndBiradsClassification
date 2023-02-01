@@ -43,7 +43,7 @@ def get_model():
     if config.LOAD_NEW_MODEL:
         # kwargs = dict({"num_classes":config.NUM_CLASSES})
         model = load_model( upload_model(weights=upload_weight.DEFAULT)) # upload_model(weights=upload_weight.DEFAULT)
-        
+
         # model.conv1.in_channels = config.NUM_CHANNELS
         # model.fc.out_features = config.NUM_CLASSES
 
@@ -57,6 +57,13 @@ def get_model():
             model.load_state_dict(torch.load(config.MODEL_PATH))
         except:
             model = torch.load(config.MODEL_PATH) 
+        model.birads = torch.nn.Sequential(
+            torch.nn.Linear(model.birads.in_features,256),
+            torch.nn.Dropout(),
+            torch.nn.Linear(256,64),
+            torch.nn.Dropout(),
+            torch.nn.Linear(64,3)
+        )
         # print(model.classifier)
         # model.classifier = torch.nn.Linear(1024,config.NUM_CLASSES)
 
@@ -103,7 +110,7 @@ def get_others(model):
 
     lossFunc = Loss()
     # opt = RMSprop(model.parameters(),lr=config.INIT_LR)
-    opt = Adam(model.parameters(), lr=config.INIT_LR,weight_decay=5e-5)#,weight_decay=1e-6
+    opt = Adam(model.parameters(), lr=config.INIT_LR,weight_decay=2e-5)#,weight_decay=1e-6
     print("LossFunc:",lossFunc)
     print("Optimizer:",opt)
 
@@ -121,7 +128,7 @@ def save_model_and_metrics(model,fold_metrics):
     with open(os.path.join(config.SAVE_FOLDER,name,model.__class__.__name__+".json"),"w") as f:
         f.write(jso)
 
-    srcs = ["DataLoaders/XLS_utils.py","DataLoaders/fiximage.py","DataLoaders/dataset.py","DataLoaders/config.py","main.py","engine.py"]
+    srcs = ["DataLoaders/XLS_utils.py","DataLoaders/fiximage.py","DataLoaders/dataset.py","DataLoaders/config.py","main.py","engine.py","AllModels/TransferlerarningModels/transfer_learning.py"]
     for src in srcs:
         dst = os.path.join(config.BASE_OUTPUT,"results_models",name,src.split("/")[-1].split(".")[0]+".txt")
         shutil.copyfile(os.path.join(config.BASE_OUTPUT,src),dst)
@@ -136,34 +143,34 @@ def get_dataloaders(train_valDS,train_sampler,val_sampler):
 def base():
     test_acc = []
     model = get_model() #load_model().to(config.DEVICE)
+    total_time_start = time.time()
+    metrics = {"training":[],"test":[]}
+    lossFunc, opt= get_others(model)
+
+    data = XLS()
+    train_val,test = data.return_datasets()
+    print(f"[INFO] found {len(train_val)} examples in the train and val set...")
+    print(f"[INFO] found {len(test)} examples in the test set...")   
+
+    train_val_indexs,train_val = data.train_val_k_fold(train_val)
+
+    test = Dataset(test,False)
+    testLoader = DataLoader(test,config.BATCH_SIZE,shuffle=False,num_workers=4,collate_fn=collate_fn)
+    
     for _ in range(config.TEKRAR):
         imp.reload(config)
-        total_time_start = time.time()
-        lossFunc, opt= get_others(model)
-
         
-        data = XLS()
-        train_val,test = data.return_datasets()
-        train_val_indexs,train_val = data.train_val_k_fold(train_val)
-
-        print(f"[INFO] found {len(train_val)} examples in the train and val set...")
-        print(f"[INFO] found {len(test)} examples in the test set...")        
-        
-        test = Dataset(test,False)
-        testLoader = DataLoader(test,config.BATCH_SIZE,shuffle=False,num_workers=4,collate_fn=collate_fn)
-        metrics = {"training":[],"test":[]}
-
         for fold,(train_idxs,val_idxs) in enumerate(zip(train_val_indexs["train"],train_val_indexs["val"])):
             print(f'FOLD {fold}')
             print('--------------------------------')
 
             train = Dataset(train_val.iloc[train_idxs],True)
-            val = Dataset(train_val.iloc[val_idxs],False)
+            val = Dataset(train_val.iloc[val_idxs],False,True)
             print(f"[INFO] found {len(train)} examples in the train set...")
             print(f"[INFO] found {len(val)} examples in the val set...")
 
-            trainLoader = DataLoader(train,sampler=train.sampler, batch_size=config.BATCH_SIZE, num_workers=0,collate_fn=collate_fn)
-            valLoader = DataLoader(val, shuffle=False, batch_size=config.BATCH_SIZE, num_workers=0,collate_fn=collate_fn)
+            trainLoader = DataLoader(train,sampler=train.sampler, batch_size=config.BATCH_SIZE, num_workers=4,collate_fn=collate_fn)
+            valLoader = DataLoader(val, shuffle=False, batch_size=config.BATCH_SIZE, num_workers=4,collate_fn=collate_fn)
 
             training_metrics = training(model,trainLoader,lossFunc,opt,valLoader,fold)
             metrics["training"].append(training_metrics)
@@ -174,12 +181,12 @@ def base():
 
 
 
-        # image,_ = train_valDS[0]
-        # for id,img in enumerate(image):
-        #     # print(img.min(),img.max())
-        #     T.ToPILImage()(img).show()
-        #     time.sleep(1)
-        # input()
+    # image,_ = train_valDS[0]
+    # for id,img in enumerate(image):
+    #     # print(img.min(),img.max())
+    #     T.ToPILImage()(img).show()
+    #     time.sleep(1)
+    # input()
         if config.CV_K_FOLDS < 2:
             trainLoader = DataLoader(train_val,config.BATCH_SIZE,sampler=train_val.sampler,num_workers=4,collate_fn=collate_fn)
             training_metrics = training(model,trainLoader,lossFunc,opt)
@@ -190,9 +197,9 @@ def base():
 
         test_acc.append(metrics["test"][-1]["acc"])
 
-        total_time = int(time.time()-total_time_start)/60
-        print(f"---------- Training_time:{total_time} minute ----------")
-        save_model_and_metrics(model,metrics)
+    total_time = int(time.time()-total_time_start)/60
+    print(f"---------- Training_time:{total_time} minute ----------")
+    save_model_and_metrics(model,metrics)
     
     print(test_acc)
     print(sum(test_acc)/len(test_acc))

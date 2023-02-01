@@ -70,13 +70,16 @@ def get_transforms(train=True):
 
 
 class Dataset(datasets.VisionDataset):
-    def __init__(self,dataset: pd.DataFrame,train_transform=True):
+    def __init__(self,dataset: pd.DataFrame,train_transform=True,val=False):
         super().__init__(self,dataset)
         self.train_transform = train_transform
         if self.train_transform:
             print("Train data is preparing...")
         else:
-            print("Test data is preparing...")
+            if val:
+                print("Validation data is preparing...")
+            else:
+                print("Test data is preparing...")
 
         self.dcm_names = ["LCC","LMLO","RCC","RMLO"]
 

@@ -35,7 +35,7 @@ class XLS():
     def train_val_k_fold(self,df:pd.DataFrame):
         df = df.reset_index(drop=True)
         indices = [*list(df.index)]
-        kfold = KFold(n_splits=config.CV_K_FOLDS, shuffle=True)
+        kfold = KFold(n_splits=config.CV_K_FOLDS, shuffle=True,random_state=44)
         indexs = {"train":[],"val":[]}
         for fold, (train_ids, valid_ids) in enumerate(kfold.split(indices)):
             train_sampler = [*SubsetRandomSampler(train_ids)]

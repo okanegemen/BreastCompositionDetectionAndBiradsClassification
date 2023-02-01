@@ -25,10 +25,10 @@ FREEZE_LAYER = 0.                           # baştan % kaç layer ın freeze ed
 NUM_CHANNELS = 1                            # dicomların kaç channel olarak yükleneceğini belirler
 NUM_CLASSES = 3
 
-TEKRAR = 3                                  # aynı eğitimi aynı modeli devam ettirerek kaç defa eğitileceği
-CV_K_FOLDS = 4                              # 2 den küçük sayı girilirse sadece train ve test yapılır
+TEKRAR = 15                                  # aynı eğitimi aynı modeli devam ettirerek kaç defa eğitileceği
+CV_K_FOLDS = 3                              # 2 den küçük sayı girilirse sadece train ve test yapılır
 NUM_EPOCHS = 3                              # her fold da olacak epoch sayısı
-INIT_LR = 0.0001                            # learning rate
+INIT_LR = 0.00005                            # learning rate
 BATCH_SIZE = 64 
 
 CAT_MODEL = True
@@ -36,7 +36,7 @@ CAT_MODEL = True
 SAVE_MODEL_PER_FOLD = 2                     # CV için her kaç foldda save edeceğini belirtir
 VALIDATE_PER_EPOCH = 1                      # val kaç epochta bir olacağını belirtir
 
-ELIMINATE_CORRUPTED_PATIENTS = True         # kirli verileri sadece train verisinden çıkartır
+ELIMINATE_CORRUPTED_PATIENTS = False         # kirli verileri sadece train verisinden çıkartır
 
 CLAHE_CLIP = 2                              # clahe fonksiyonunun etki miktarını belirler
 FOCAL_LOSS = True                           # cross entropy üzerine focal loss kullanır
@@ -51,6 +51,6 @@ CROP_RATIO = 0.9                            # Resmin kırpılma oranına etki ed
 
 NORMALIZE = True                            # Normalize kullanır
 
-LOAD_NEW_MODEL = True
+LOAD_NEW_MODEL = False
 
-MODEL_PATH = os.path.join(BASE_OUTPUT,"results_models/","AlexnetCat2_1_31_12_29/AlexnetCat2.pth")
+MODEL_PATH = os.path.join(BASE_OUTPUT,"results_models/","concatmodel/ConcatModel_2_1_2_24/ConcatModel.pth")

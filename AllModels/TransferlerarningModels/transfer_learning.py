@@ -253,7 +253,6 @@ class FeaturesImg(nn.Module):
         super(FeaturesImg,self).__init__()
         self.inplanes = inplanes
 
-
         self.conv1 = nn.Conv2d(in_channels=inplanes,out_channels=16,kernel_size=1,bias=False)
         self.bn1 = nn.BatchNorm2d(16)
         self.relu1 = nn.ReLU(inplace=True)
@@ -298,13 +297,12 @@ class ConcatModel(nn.Module):
 
     def __init__(self,model,inplanes=3):
         super(ConcatModel,self).__init__()
-        nn.Dropout()
         self.inplanes = inplanes
         self.img1 = FeaturesImg(inplanes)
         self.img2 = FeaturesImg(inplanes)
         self.img3 = FeaturesImg(inplanes)
         self.img4 = FeaturesImg(inplanes)
-        self.ch_drop = nn.Dropout2d(p=0.5)
+        self.ch_drop = nn.Dropout2d()
 
         firstBlock,firstBody,body  = self._modifyFirstLayertakeBody(model=model,in_channels = 256)
         if  firstBody !=0 :
@@ -342,7 +340,6 @@ class ConcatModel(nn.Module):
         features = self.featureExtrator(final)
 
         features = features.view(features.size(0),-1)
-
 
         birads = self.birads(features)
         # composition = self.composition(features)
