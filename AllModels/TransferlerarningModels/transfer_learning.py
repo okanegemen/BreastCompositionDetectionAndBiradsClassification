@@ -551,7 +551,7 @@ class AlexnetCat(nn.Module):
 
         self.fc3 = nn.Linear(256,128)
 
-        self.fc4 = nn.Linear(128,num_classes[0])
+        self.fc4 = nn.Linear(128,3)
 
     def forward(self,inputs:dict):
 
@@ -583,6 +583,7 @@ class AlexnetCat(nn.Module):
         out = self.fc1(out)
         out = self.fc2(out)
         out = self.fc3(out)
+        out = self.fc4(out)
         return out
 
 
@@ -608,7 +609,7 @@ class AlexnetCat2(nn.Module):
 
         self.fc3 = nn.Linear(256,128)
 
-        self.fc4 = nn.Linear(128,num_classes[0])
+        self.fc4 = nn.Linear(128,3)
 
     def forward(self,inputs:dict):
 
@@ -640,16 +641,36 @@ class AlexnetCat2(nn.Module):
         out = self.fc1(out)
         out = self.fc2(out)
         out = self.fc3(out)
+        out = self.fc4(out)
         return out
 
 
 
 if __name__ == "__main__":
 
-
+    import pydicom as dicom
     import os 
+    import numpy as np
 
-    model = AlexnetCat2(1)
+    dcm = dicom.dcmread("/Users/okanegemen/Desktop/yoloV5/20586960_6c613a14b80a8591_MG_R_ML_ANON.dcm")
+
+    img = dcm.pixel_array
+
+    print(img.shape)
+
+    img = np.resize(img,(1,1,100,100))
+    img = np.float32(img)
+
+    img = torch.tensor(img)
+    print(img.size())
+    dicti = {"LCC":img,"LMLO":img,"RCC":img,"RMLO":img}
+    model = AlexnetCat(1)
+
+
+    out = model(dicti)
+    print(out)
+
+
 
 
 
