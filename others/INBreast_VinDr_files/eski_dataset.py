@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import pydicom
 import pydicom.data
-from XML_utils import XML_files
+from others.INBreast_VinDr_files.XML_utils import XML_files
 from torch import nn
 import torch
 import numpy as np
