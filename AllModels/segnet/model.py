@@ -334,7 +334,7 @@ class SegNet(nn.Module):
             print("dim_3d: {}".format(dim_3d))
             print("dim_2d: {}".format(dim_2d))
             print("dim_1d: {}".format(dim_1d))
-            print("dim_0d: {}".format(dim_0d))
+            # print("dim_0d: {}".format(dim_0d))
 
 
         return {"-":out, "birads":out1}

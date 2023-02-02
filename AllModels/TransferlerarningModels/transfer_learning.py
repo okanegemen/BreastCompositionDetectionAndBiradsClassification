@@ -47,17 +47,9 @@ class efficientNet_v2L(nn.Module):
 
       
     def forward(self,inputs):
-            out = self.first_block_will_using(inputs)
+        out = self.first_block_will_using(inputs)
 
-            out = self.body(out)
-
-            return out
-
-
-
-
-    
-
+        out = self.body(out)
 
 
 
@@ -103,10 +95,10 @@ class efficientNetv2s(nn.Module):
 # print(first_block)
 # print(modules[0])
 class Resnet18(nn.Module):
-    def __init__(self,in_channels=4,num_classes=3) :
+    def __init__(self,in_channels=4,num_classes=3,pretrained=True) :
         super(Resnet18,self).__init__()
 
-        model = models.resnet18()
+        model = models.resnet18(pretrained=pretrained)
 
         modules = [module for module in model.children()]
 
@@ -123,7 +115,7 @@ class Resnet18(nn.Module):
         out = out.view(out.size(0),-1)
         out = self.classifier(out)
 
-        return out 
+        return {"birads":out}
 
 
 
@@ -157,7 +149,7 @@ class Resnet34(nn.Module):
         out = self.last(out)
 
 
-        return out 
+        return {"birads":out}
 
 
 
@@ -165,7 +157,7 @@ class Resnet34(nn.Module):
 
 
 class ResNet101(nn.Module):
-    def __init__(self,in_channels,num_classes) :
+    def __init__(self,in_channels,num_classes=3) :
 
         super(ResNet101,self).__init__()
 
@@ -196,7 +188,7 @@ class ResNet101(nn.Module):
         out = self.fc(out)
 
 
-        return out
+        return {"birads":out}
 
 
 
@@ -544,21 +536,12 @@ class AlexnetCat(nn.Module):
 
         self.model = efficientNet_v2L(in_channels=256)
 
-        self.dropout = nn.Dropout(p=0.4,inplace=True)
-        self.fc1 = nn.Linear(1280,512)
-
-        self.fc2 = nn.Linear(512,256)
-
-        self.fc3 = nn.Linear(256,128)
-
-        self.fc4 = nn.Linear(128,3)
-
     def forward(self,inputs:dict):
 
-        input1 = inputs["LCC"]
-        input2 = inputs["LMLO"]
-        input3 = inputs["RCC"]
-        input4 = inputs["RMLO"]
+        input1 = inputs[:,0,:,:].unsqueeze(1)
+        input2 = inputs[:,1,:,:].unsqueeze(1)
+        input3 = inputs[:,2,:,:].unsqueeze(1)
+        input4 = inputs[:,3,:,:].unsqueeze(1)
 
         out1 = self.img1(input1)
         out2 = self.img2(input2)
@@ -583,7 +566,6 @@ class AlexnetCat(nn.Module):
         out = self.fc1(out)
         out = self.fc2(out)
         out = self.fc3(out)
-        out = self.fc4(out)
         return out
 
 
@@ -609,15 +591,15 @@ class AlexnetCat2(nn.Module):
 
         self.fc3 = nn.Linear(256,128)
 
-        self.fc4 = nn.Linear(128,3)
+        self.fc4 = nn.Linear(128,num_classes[0])
 
     def forward(self,inputs:dict):
 
-        input1 = inputs["LCC"]
-        input2 = inputs["LMLO"]
-        input3 = inputs["RCC"]
-        input4 = inputs["RMLO"]
-
+        input1 = inputs[:,0,:,:].unsqueeze(1)
+        input2 = inputs[:,1,:,:].unsqueeze(1)
+        input3 = inputs[:,2,:,:].unsqueeze(1)
+        input4 = inputs[:,3,:,:].unsqueeze(1)
+        
         out1 = self.img1(input1)
         out2 = self.img2(input2)
 
@@ -641,36 +623,16 @@ class AlexnetCat2(nn.Module):
         out = self.fc1(out)
         out = self.fc2(out)
         out = self.fc3(out)
-        out = self.fc4(out)
         return out
 
 
 
 if __name__ == "__main__":
 
-    import pydicom as dicom
+
     import os 
-    import numpy as np
 
-    dcm = dicom.dcmread("/Users/okanegemen/Desktop/yoloV5/20586960_6c613a14b80a8591_MG_R_ML_ANON.dcm")
-
-    img = dcm.pixel_array
-
-    print(img.shape)
-
-    img = np.resize(img,(1,1,100,100))
-    img = np.float32(img)
-
-    img = torch.tensor(img)
-    print(img.size())
-    dicti = {"LCC":img,"LMLO":img,"RCC":img,"RMLO":img}
-    model = AlexnetCat(1)
-
-
-    out = model(dicti)
-    print(out)
-
-
+    model = AlexnetCat2(1)
 
 
 

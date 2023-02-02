@@ -3,9 +3,19 @@ import torch
 from DataLoaders.scores import scores
 from qqdm import qqdm, format_str
 import math
+import os
 import sys
+import imp
+
+def focal_loss(outputs,targets, alpha=1, gamma=2):
+    ce_loss = torch.nn.functional.cross_entropy(outputs, targets, reduction='none') # important to add reduction='none' to keep per-batch-item loss
+    pt = torch.exp(-ce_loss)
+    focal_loss = (alpha * (1-pt)**gamma * ce_loss).mean()
+    return focal_loss
 
 def training(model, trainLoader, lossFunc, optimizer, valLoader=None,fold="---"):
+    if config.FOCAL_LOSS:
+        loss_Func = focal_loss
     metrics = {"train":[],"val":[]}
 
     # loop over epochs
@@ -37,6 +47,16 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader=None,fold="---")
                 outputs = model(images)["birads"]
                 loss_train = lossFunc(outputs,targets)
             
+            l1_regularization = 0.
+            l2_regularization = 0.
+            if config.L1regularization:
+                for param in model.parameters():
+                    l1_regularization += param.abs().sum()
+            if config.L2regularization:
+                for param in model.parameters():
+                    l2_regularization += (param**2).sum()
+            loss_train += l1_regularization + l2_regularization
+
             optimizer.zero_grad()
 
             train_loss.append(loss_train.item())
@@ -93,8 +113,11 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader=None,fold="---")
                                     **scores_val.metrics()})
 
         if epoch % config.SAVE_MODEL_PER_EPOCH == 0 or epoch == config.NUM_EPOCHS-1:
+            imp.reload(config)
+            name = ""+model.__class__.__name__+"_"+str(fold)+"_"+config.DATE_FOLDER
+            os.makedirs(os.path.join(config.MID_FOLDER,name))
             print("\nSaving Model State Dict...")
-            torch.save(model.state_dict(), config.MODEL_PATH.strip(".pth")+"_fold"+str(fold)+"_epoch"+str(epoch)+".pth")
+            # torch.save(model.state_dict(), config.MID_FOLDER+"/"+name+"/"+name+".pth")
 
         # accumulate predictions from all images
         torch.set_num_threads(n_threads)
