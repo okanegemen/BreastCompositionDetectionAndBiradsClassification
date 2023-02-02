@@ -22,36 +22,43 @@ if __name__ == "__main__":
 
     train = Dataset(train,True)
 
-    mean = torch.zeros(4).to(config.DEVICE)
-    mean_d = torch.zeros(4).to(config.DEVICE)
-    mean_l = torch.zeros(4).to(config.DEVICE)
+    for k in range(20):
+        image,birads = train[k]
+        print(birads)
+        for i in range(4):
+            T.ToPILImage()(image[i]).show()
+            input()
 
-    std = torch.zeros(4).to(config.DEVICE)
-    std_d = torch.zeros(4).to(config.DEVICE)
-    std_l = torch.zeros(4).to(config.DEVICE)
+    # mean = torch.zeros(4).to(config.DEVICE)
+    # mean_d = torch.zeros(4).to(config.DEVICE)
+    # mean_l = torch.zeros(4).to(config.DEVICE)
 
-    count_d = 0
-    count_l = 0
+    # std = torch.zeros(4).to(config.DEVICE)
+    # std_d = torch.zeros(4).to(config.DEVICE)
+    # std_l = torch.zeros(4).to(config.DEVICE)
 
-    #["LCC","LMLO","RCC","RMLO"]
-    for i in range(len(train)):
-        m = train[i][0].mean(dim=(1,2)).to(config.DEVICE)
-        s = train[i][0].std(dim=(1,2)).to(config.DEVICE)
-        mean += m
-        std += s
-        if ((m>0.7).sum()<=2):
-            mean_d += m
-            std_d += s
-            count_d += 1
-        else:
-            mean_l += m
-            std_l += s
-            count_l += 1
+    # count_d = 0
+    # count_l = 0
+
+    # #["LCC","LMLO","RCC","RMLO"]
+    # for i in range(len(train)):
+    #     m = train[i][0].mean(dim=(1,2)).to(config.DEVICE)
+    #     s = train[i][0].std(dim=(1,2)).to(config.DEVICE)
+    #     mean += m
+    #     std += s
+    #     if ((m>0.7).sum()<=2):
+    #         mean_d += m
+    #         std_d += s
+    #         count_d += 1
+    #     else:
+    #         mean_l += m
+    #         std_l += s
+    #         count_l += 1
     
 
-    print(mean,std)
-    print(mean_d,std_d)
-    print(mean_l,std_l)
+    # print(mean,std)
+    # print(mean_d,std_d)
+    # print(mean_l,std_l)
 
 # tensor([471.5336, 464.4264, 477.3960, 470.7619], device='cuda:0') tensor([685.1426, 715.8910, 689.9050, 722.4031], device='cuda:0')
 # tensor([471.5336, 464.4264, 477.3960, 470.7619], device='cuda:0') tensor([685.1426, 715.8910, 689.9050, 722.4031], device='cuda:0')

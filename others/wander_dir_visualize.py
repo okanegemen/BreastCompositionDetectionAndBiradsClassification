@@ -9,7 +9,7 @@ import config
 import pydicom
 import torch 
 import scipy.ndimage as ndi
-from others.old_fiximage import fit_image
+from fiximage import fit_image
 import pandas as pd
 import cv2
 

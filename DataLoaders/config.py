@@ -14,46 +14,43 @@ BASE_OUTPUT = os.path.join(MAIN_DIR,"yoloV5")
 
 DATE = datetime.datetime.now().astimezone().timetuple()
 DATE_FOLDER = str(DATE[1])+"_"+str(DATE[2])+"_"+str(DATE[3])+"_"+str(DATE[4])
-MID_FOLDER = os.path.join(BASE_OUTPUT,"output")
-SAVE_FOLDER = os.path.join(BASE_OUTPUT,"results_models")
+MID_FOLDER = os.path.join(BASE_OUTPUT,"output") # model eğitilirken kaydedilen modeller buraya gider
+SAVE_FOLDER = os.path.join(BASE_OUTPUT,"results_models") # eğitim bitince model ve dosyalar buraya kaydedilir
 
-CROP_DATA = 0.
-TEST_SPLIT = 0.17
-K_FOLD = True
-CV_K_FOLDS = 4
-INIT_LR = 0.0001
-NUM_EPOCHS = 15
-BATCH_SIZE = 64
+CROP_DATA = 0.                              # 0-1 arasında değer girilir. girilen değerin % si kadar veriyi yok sayar
+TEST_SPLIT = 0.17                           # test oranı
 
-ELIMINATE_CORRUPTED_PATIENTS = True # only for train
+FREEZE_LAYER = 0.                           # baştan % kaç layer ın freeze edeceğini belirtir.
 
-MODEL_INPUT_CONCATED = True
-FREEZE_LAYER = 0.5  # baştan 
-SKIP_FREEZE = [1,1,3] # 1 dondur 1 atla son 3 katmana karışma
-
-NUM_CHANNELS = 4
+NUM_CHANNELS = 1                            # dicomların kaç channel olarak yükleneceğini belirler
 NUM_CLASSES = 3
-NUM_LEVELS = 1
 
-CLAHE_CLIP = 2
-FOCAL_LOSS = True
+TEKRAR = 10                                  # aynı eğitimi aynı modeli devam ettirerek kaç defa eğitileceği
+CV_K_FOLDS = 4                              # 2 den küçük sayı girilirse sadece train ve test yapılır
+NUM_EPOCHS = 4                              # her fold da olacak epoch sayısı
+INIT_LR = 0.00005                            # learning rate
+BATCH_SIZE = 32
+
+CAT_MODEL = True
+
+SAVE_MODEL_PER_FOLD = 2                     # CV için her kaç foldda save edeceğini belirtir
+VALIDATE_PER_EPOCH = 1                      # val kaç epochta bir olacağını belirtir
+
+ELIMINATE_CORRUPTED_PATIENTS = False         # kirli verileri sadece train verisinden çıkartır
+
+CLAHE_CLIP = 2                              # clahe fonksiyonunun etki miktarını belirler
+FOCAL_LOSS = True                           # cross entropy üzerine focal loss kullanır
+
 L1regularization = False
 L2regularization = False
 
-SAVE_MODEL_PER_EPOCH = 10
-VALIDATE_PER_EPOCH = 5
+INPUT_IMAGE_WIDTH = 128                      # yatay
+INPUT_IMAGE_HEIGHT = 128                     # dikey
 
-INPUT_IMAGE_WIDTH = 100 # yatay
-INPUT_IMAGE_HEIGHT = 100 # dikeyweights = models.EfficientNet_V2_L_Weights,pretrained = False
-CROP_RATIO = 0.9
-PAD_PIXELS = 7
-NORMALIZE = True
-PRINT_FREQ = None
+CROP_RATIO = 0.9                            # Resmin kırpılma oranına etki eder
 
+NORMALIZE = True                            # Normalize kullanır
 
-LOAD_NEW_MODEL = True
+LOAD_NEW_MODEL = False
 
-MODEL_PATH = os.path.join(BASE_OUTPUT,"results_models/AlexnetCat2_1_29_17_15/AlexnetCat2.pth")
-PLOT_ACC_PATH = os.path.sep.join([BASE_OUTPUT,"output/plot_acc.png"])
-PLOT_LOSS_PATH = os.path.sep.join([BASE_OUTPUT,"output/plot_loss.png"])
-PLOT_TEST = os.path.sep.join([BASE_OUTPUT,"output/plot_test.png"])
+MODEL_PATH = os.path.join(BASE_OUTPUT,"results_models/","concatmodel/ConcatModel_2_1_2_24/ConcatModel.pth")

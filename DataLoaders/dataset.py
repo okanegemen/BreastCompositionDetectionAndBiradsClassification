@@ -33,12 +33,11 @@ import time
 import imutils
 
 def get_transforms(train=True):
-    p = config.PAD_PIXELS
     if train:
         transform = torch.nn.Sequential(
                             T.RandomErasing(scale=(0.01,0.01)),
                             # T.RandomInvert(),
-                            # T.RandomRotation(4,expand=True),
+                            T.RandomRotation(4,expand=True),
                             # T.RandomAffine(3),
                             # T.RandomHorizontalFlip(),
                             # T.RandomVerticalFlip(),
@@ -46,7 +45,7 @@ def get_transforms(train=True):
                             # T.RandomAutocontrast(1.0),
                             # T.RandomSolarize(0.3),
                             # T.RandomPerspective(0.1),
-                       ).to(config.DEVICE)
+                       )
 
         transform_cpu = T.Compose([
                             T.ToPILImage(),
@@ -71,13 +70,16 @@ def get_transforms(train=True):
 
 
 class Dataset(datasets.VisionDataset):
-    def __init__(self,dataset: pd.DataFrame,train_transform=True):
+    def __init__(self,dataset: pd.DataFrame,train_transform=True,val=False):
         super().__init__(self,dataset)
         self.train_transform = train_transform
         if self.train_transform:
             print("Train data is preparing...")
         else:
-            print("Test data is preparing...")
+            if val:
+                print("Validation data is preparing...")
+            else:
+                print("Test data is preparing...")
 
         self.dcm_names = ["LCC","LMLO","RCC","RMLO"]
 
@@ -94,6 +96,19 @@ class Dataset(datasets.VisionDataset):
         class_weights = get_class_weights(self.ids)
         self.sampler = get_sampler(self.ids,class_weights)
 
+        self.class0_T = torch.nn.Sequential(
+                                # T.RandomErasing(scale=(0.01,0.01)),
+                                # T.RandomInvert(),
+                                # T.RandomRotation(4,expand=True),
+                                # T.RandomAffine(3),
+                                # T.RandomHorizontalFlip(),
+                                # T.RandomVerticalFlip(),
+                                # T.LinearTransformation(),
+                                T.RandomAutocontrast(0.1),
+                                # T.RandomSolarize(0.3),
+                                # T.RandomPerspective(0.1),
+                            )
+
     def __getitem__(self, index: int):
         data = self.dataset.iloc[index,:]
         dicti = data.to_dict()
@@ -105,11 +120,13 @@ class Dataset(datasets.VisionDataset):
         # kadran_l = torch.tensor(dicti["KADRAN BİLGİSİ (SOL)"])
 
         for name,image in images.items():
-            image = torch.from_numpy(image).float().unsqueeze(0)/255.
+            images[name] = torch.from_numpy(image).float().unsqueeze(0)/255.
 
-            images[name] = self.transform(image)
+            images[name] = self.transform(images[name])
             if self.train_transform:
                 images[name] = self.transform_cpu(images[name].to("cpu"))
+                if birads == 0:
+                    images[name] = self.class0_T(images[name])
 
         images = {key:image for key,image in images.items()}
 
@@ -124,6 +141,18 @@ class Dataset(datasets.VisionDataset):
         #     "kadran_l":kadran_l,
         #     "names":images.keys()
         # }
+   
+        # This is for models which have 4 small models at top of the whole image
+        # 4 image for each patient
+        if config.CAT_MODEL: 
+            # each image is rgb
+            image = image.unsqueeze(1)
+            image = torch.cat([image,image,image],dim=1)
+            # image = torch.unbind(image)
+
+            # birads = torch.stack([birads,birads,birads,birads])
+            # birads = torch.unbind(birads)
+
         return  image,birads
 
 

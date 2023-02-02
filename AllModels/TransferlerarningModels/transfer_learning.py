@@ -17,14 +17,8 @@ warnings.filterwarnings("ignore")
 
 
 
-
-
-
-
-
-
 class efficientNet_v2L(nn.Module):
-    def __init__(self,in_channels,pretrained=False):
+    def __init__(self,in_channels,num_classes,pretrained=False):
         super(efficientNet_v2L,self).__init__()
 
         model = models.efficientnet_v2_l(pretrained = pretrained)
@@ -50,14 +44,24 @@ class efficientNet_v2L(nn.Module):
         out = self.first_block_will_using(inputs)
 
         out = self.body(out)
+        
+        out = out.view(out.size(0),-1)
+        out = self.classifier(out)
 
+        return {"birads":out} 
+
+
+
+
+
+    
 
 
 class efficientNetv2s(nn.Module):
     def __init__(self,in_channels=4, weight : bool = False):
         super(efficientNetv2s,self).__init__()
 
-        model = models.efficientnet_v2_s(pretrained = weight)
+        model = models.efficientnet_v2_s(weights = models.EfficientNet_V2_S_Weights.DEFAULT)
 
 
         modules = [module for module in model.children()]
@@ -77,6 +81,7 @@ class efficientNetv2s(nn.Module):
         out = self.first_block_will_using(inputs)
 
         out = self.body(out)
+        return out
         
          
 
@@ -95,10 +100,10 @@ class efficientNetv2s(nn.Module):
 # print(first_block)
 # print(modules[0])
 class Resnet18(nn.Module):
-    def __init__(self,in_channels=4,num_classes=3,pretrained=True) :
+    def __init__(self,in_channels=4,num_classes=3) :
         super(Resnet18,self).__init__()
 
-        model = models.resnet18(pretrained=pretrained)
+        model = models.resnet18(weights = models.ResNet18_Weights.DEFAULT)
 
         modules = [module for module in model.children()]
 
@@ -115,7 +120,7 @@ class Resnet18(nn.Module):
         out = out.view(out.size(0),-1)
         out = self.classifier(out)
 
-        return {"birads":out}
+        return out
 
 
 
@@ -126,7 +131,7 @@ class Resnet34(nn.Module):
 
         super(Resnet34,self).__init__()
 
-        model = models.resnet34(pretrained = False)
+        model = models.resnet34(weights = models.ResNet34_Weights.DEFAULT)
 
         modules = [module for module in model.children()]
 
@@ -148,8 +153,7 @@ class Resnet34(nn.Module):
         out = out.view(out.size(0),-1)
         out = self.last(out)
 
-
-        return {"birads":out}
+        return out
 
 
 
@@ -157,11 +161,11 @@ class Resnet34(nn.Module):
 
 
 class ResNet101(nn.Module):
-    def __init__(self,in_channels,num_classes=3) :
+    def __init__(self,in_channels=4,num_classes=3) :
 
         super(ResNet101,self).__init__()
 
-        model = models.resnet101(weights = models.ResNet101_Weights,pretrained = False)
+        model = models.resnet101(weights = models.ResNet101_Weights.DEFAULT)
 
         self.first_layer = nn.Sequential(nn.Conv2d(in_channels=in_channels,out_channels=64,kernel_size=7,stride=2,padding=3,bias=False),
                                     nn.BatchNorm2d(64),
@@ -187,17 +191,19 @@ class ResNet101(nn.Module):
         out = out.view(out.size(0),-1)
         out = self.fc(out)
 
-
-        return {"birads":out}
+        return out
 
 
 
 class Resnet50(nn.Module):
-    def __init__(self,in_channels):
+    def __init__(self,pretrained=True,in_channels=4):
         super(Resnet50,self).__init__()
 
-        model = models.resnet50()
-
+        if pretrained:
+            model = models.resnet50(weights = models.ResNet50_Weights.DEFAULT)
+        else:
+            model = models.resnet50()
+    
         module_list = [module for module in model.children()]
 
 
@@ -206,25 +212,38 @@ class Resnet50(nn.Module):
 
         body = module_list[1:-1]
         self.featureExtracture = nn.Sequential(first_layer,*body)
-        self.birads = nn.Linear(in_features=2048,out_features=3)
-        self.composition = nn.Linear(in_features=2048,out_features=4)
-        self.kadran = nn.Linear(in_features=2048,out_features=10)
-
         
+        self.dropout = nn.Dropout(p=0.4,inplace=True)
 
+        self.b1 = nn.Linear(in_features=2048,out_features=512)
+        self.b2 = nn.Linear(in_features=512,out_features=128)
+        self.b3 = nn.Linear(in_features=128,out_features=3)
+
+        self.c1 = nn.Linear(in_features=2048,out_features=512)
+        self.c2 = nn.Linear(in_features=512,out_features=128)
+        self.c3 = nn.Linear(in_features=128,out_features=4)
+        
+        self.k1 = nn.Linear(in_features=2048,out_features=512)
+        self.k2 = nn.Linear(in_features=512,out_features=128)
+        self.k3 = nn.Linear(in_features=128,out_features=10)
 
     def forward(self,input):
 
         out = self.featureExtracture(input)
 
         out = out.view(out.size(0),-1)
-        birads = self.birads(out)
-        composition = self.composition(out)
-        kadran = self.kadran(out)
+        b_out = self.b1(out)
+        b_out = self.dropout(b_out)
+        b_out = self.b2(b_out)
+        b_out = self.dropout(b_out)
+        b_out = self.b3(b_out)
+
+        # composition = self.composition(out)
+        # kadran = self.kadran(out)
 
 
 
-        return {"birads":birads , "acr":composition ,"kadran":kadran} 
+        return b_out
 
 
 
@@ -233,7 +252,6 @@ class FeaturesImg(nn.Module):
     def __init__(self ,inplanes):
         super(FeaturesImg,self).__init__()
         self.inplanes = inplanes
-
 
         self.conv1 = nn.Conv2d(in_channels=inplanes,out_channels=16,kernel_size=1,bias=False)
         self.bn1 = nn.BatchNorm2d(16)
@@ -277,20 +295,16 @@ class SEBlock(nn.Module):
 
 class ConcatModel(nn.Module):
 
-    def __init__(self,inplanes,model):
+    def __init__(self,model,inplanes=3):
         super(ConcatModel,self).__init__()
-
         self.inplanes = inplanes
-        
-
-        
-
         self.img1 = FeaturesImg(inplanes)
         self.img2 = FeaturesImg(inplanes)
         self.img3 = FeaturesImg(inplanes)
         self.img4 = FeaturesImg(inplanes)
+        self.ch_drop = nn.Dropout2d()
 
-        firstBlock,firstBody,body  = self._modifyFirstLayertakeBody(model=model)
+        firstBlock,firstBody,body  = self._modifyFirstLayertakeBody(model=model,in_channels = 256)
         if  firstBody !=0 :
             self.featureExtrator = nn.Sequential(*firstBlock,*firstBody,*body)
         else:self.featureExtrator = nn.Sequential(*firstBlock,*body)
@@ -305,16 +319,36 @@ class ConcatModel(nn.Module):
             self.composition = nn.Linear(buffer[0].in_features,4)
             self.kadran = nn.Linear(buffer[0].in_features,10)
 
-            
+    def forward(self,inputs):
 
-
-
-
-
+        input1 = inputs[:,0,:,:,:].squeeze(1)
+        input2 = inputs[:,1,:,:,:].squeeze(1)
+        input3 = inputs[:,2,:,:,:].squeeze(1)
+        input4 = inputs[:,3,:,:,:].squeeze(1)
         
+        input1 = self.img1(input1)
+        input2 = self.img2(input2)
+        input3 = self.img3(input3)
+        input4 = self.img4(input4)
+
+        concat1 = torch.cat((input1,input2),1)
+        concat2 = torch.cat((input3,input4),1)
+        final = torch.cat((concat1,concat2),1)
+
+        final = self.ch_drop(final)
+
+        features = self.featureExtrator(final)
+
+        features = features.view(features.size(0),-1)
+
+        birads = self.birads(features)
+        # composition = self.composition(features)
+        # kadran = self.kadran(features)
+
+
+        return birads#{"birads":birads , "acr":composition ,"kadran":kadran}
         
-        
-    def _modifyFirstLayertakeBody(self,model):
+    def _modifyFirstLayertakeBody(self,model,in_channels=256):
         module_list = [modules for modules in model.children()]
 
         temp = module_list[0]
@@ -379,7 +413,7 @@ class ConcatModel(nn.Module):
                 if firstBlock[0].bias is not None:
 
 
-                    firstBlock[0] = nn.Conv2d(in_channels = 256,
+                    firstBlock[0] = nn.Conv2d(in_channels = in_channels,
                                                 out_channels=firstBlock[0].out_channels,
                                                 kernel_size = firstBlock[0].kernel_size,
                                                 stride = firstBlock[0].stride,
@@ -388,7 +422,7 @@ class ConcatModel(nn.Module):
                                                 groups =firstBlock[0].groups,
                                                 bias=True)
                 else:
-                    firstBlock[0] = nn.Conv2d(in_channels = 256,
+                    firstBlock[0] = nn.Conv2d(in_channels = in_channels,
                                                 out_channels=firstBlock[0].out_channels,
                                                 kernel_size = firstBlock[0].kernel_size,
                                                 stride = firstBlock[0].stride,
@@ -402,7 +436,7 @@ class ConcatModel(nn.Module):
 
                 if firstBlock[0][0].bias is not None:
 
-                    firstBlock[0][0] = nn.Conv2d(in_channels = 256,
+                    firstBlock[0][0] = nn.Conv2d(in_channels = in_channels,
                                                     out_channels=firstBlock[0][0].out_channels,
                                                     kernel_size=firstBlock[0][0].kernel_size,
                                                     stride = firstBlock[0][0].stride,
@@ -411,7 +445,7 @@ class ConcatModel(nn.Module):
                                                     groups = firstBlock[0][0].groups,
                                                     bias=True)
                 else:
-                    firstBlock[0][0] = nn.Conv2d(in_channels = 256,
+                    firstBlock[0][0] = nn.Conv2d(in_channels = in_channels,
                                                     out_channels=firstBlock[0][0].out_channels,
                                                     kernel_size=firstBlock[0][0].kernel_size,
                                                     stride = firstBlock[0][0].stride,
@@ -425,7 +459,7 @@ class ConcatModel(nn.Module):
             if firstBlock[0].conv.bias is not None:
 
 
-                firstBlock[0].conv = nn.Conv2d(256,
+                firstBlock[0].conv = nn.Conv2d(in_channels,
                                                 firstBlock[0].conv.out_channels,
                                                 firstBlock[0].conv.kernel_size,
                                                 firstBlock[0].conv.stride,
@@ -435,7 +469,7 @@ class ConcatModel(nn.Module):
                                                 bias = True
                                                 )
             else:
-                firstBlock[0].conv = nn.Conv2d(256,
+                firstBlock[0].conv = nn.Conv2d(in_channels,
                                             firstBlock[0].conv.out_channels,
                                             firstBlock[0].conv.kernel_size,
                                             firstBlock[0].conv.stride,
@@ -487,36 +521,6 @@ class ConcatModel(nn.Module):
 
 
         return new_buffer,linear
-            
-
-
-        
-        
-          
-    def forward(self,input1,input2,input3,input4):
-        out1 = self.img1(input1)
-
-        out2 = self.img2(input2)
-
-        out3 = self.img3(input3)
-
-        out4 = self.img4(input4)
-
-        concat1 = torch.cat((out1,out2),1)
-        
-        concat2 = torch.cat((out3,out4),1)
-        final = torch.cat((concat1,concat2),1)
-        features = self.featureExtrator(final)
-
-        features = features.view(features.size(0),-1)
-
-
-        birads = self.birads(features)
-        composition = self.composition(features)
-        kadran = self.kadran(features)
-
-
-        return {"birads":birads , "acr":composition ,"kadran":kadran}
 
 
 
@@ -536,6 +540,15 @@ class AlexnetCat(nn.Module):
 
         self.model = efficientNet_v2L(in_channels=256)
 
+        self.dropout = nn.Dropout(p=0.4,inplace=True)
+        self.fc1 = nn.Linear(1280,512)
+
+        self.fc2 = nn.Linear(512,256)
+
+        self.fc3 = nn.Linear(256,128)
+
+        self.fc4 = nn.Linear(128,num_classes[0])
+
     def forward(self,inputs:dict):
 
         input1 = inputs[:,0,:,:].unsqueeze(1)
@@ -545,9 +558,7 @@ class AlexnetCat(nn.Module):
 
         out1 = self.img1(input1)
         out2 = self.img2(input2)
-
         out3 = self.img3(input3)
-
         out4 = self.img4(input4)
 
         cat1 = torch.cat((out1,out2),dim=1)
@@ -564,8 +575,12 @@ class AlexnetCat(nn.Module):
 
         out = self.dropout(out)
         out = self.fc1(out)
+        out = self.dropout(out)
         out = self.fc2(out)
+        out = self.dropout(out)
         out = self.fc3(out)
+        out = self.dropout(out)
+        out = self.fc4(out)
         return out
 
 
@@ -621,8 +636,12 @@ class AlexnetCat2(nn.Module):
 
         out = self.dropout(out)
         out = self.fc1(out)
+        out = self.dropout(out)
         out = self.fc2(out)
+        out = self.dropout(out)
         out = self.fc3(out)
+        out = self.dropout(out)
+        out = self.fc4(out)
         return out
 
 
