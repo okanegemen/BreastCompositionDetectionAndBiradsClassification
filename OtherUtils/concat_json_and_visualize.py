@@ -6,7 +6,7 @@ import numpy as np
 
 
 def concatJson(path1:str,path2:str,wantedPath:str=None):
-
+     
 
     with open(path1) as j1,open(path2) as j2:
         data1 = json.load(j1)
@@ -34,7 +34,6 @@ def concatJson(path1:str,path2:str,wantedPath:str=None):
     
     f.close()
 
-path = "/Users/okanegemen/Desktop/yoloV5/folder/metrics_Resnet50_c_c.json"
 def plot_acc(path:str):
 
     assert path.endswith(".json") , "You must enter json file path"
