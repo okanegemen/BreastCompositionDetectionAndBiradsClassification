@@ -3,6 +3,7 @@ from DataLoaders.XLS_utils import XLS
 # from Pytorch_model.unet import UNet as load_model
 from AllModels.TransferlerarningModels.transfer_learning import ConcatModel as load_model
 from torchvision.models import resnet34 as upload_model,ResNet34_Weights as upload_weight
+# from AllModels.unet_model import UNet as upload_model
 
 import DataLoaders.config as config
 import math
@@ -42,7 +43,7 @@ def get_resnet18():
 def get_model():
     if config.LOAD_NEW_MODEL:
         # kwargs = dict({"num_classes":config.NUM_CLASSES})
-        model = load_model( upload_model(weights=upload_weight.DEFAULT)) # upload_model(weights=upload_weight.DEFAULT)
+        model = load_model(upload_model(weights=upload_weight.DEFAULT)) # upload_model(weights=upload_weight.DEFAULT)
 
         # model.conv1.in_channels = config.NUM_CHANNELS
         # model.fc.out_features = config.NUM_CLASSES
@@ -57,13 +58,6 @@ def get_model():
             model.load_state_dict(torch.load(config.MODEL_PATH))
         except:
             model = torch.load(config.MODEL_PATH) 
-        model.birads = torch.nn.Sequential(
-            torch.nn.Linear(model.birads.in_features,256),
-            torch.nn.Dropout(),
-            torch.nn.Linear(256,64),
-            torch.nn.Dropout(),
-            torch.nn.Linear(64,3)
-        )
         # print(model.classifier)
         # model.classifier = torch.nn.Linear(1024,config.NUM_CLASSES)
 
@@ -157,9 +151,10 @@ def base():
     test = Dataset(test,False)
     testLoader = DataLoader(test,config.BATCH_SIZE,shuffle=False,num_workers=4,collate_fn=collate_fn)
     
-    for _ in range(config.TEKRAR):
+    for loop in range(config.TEKRAR):
         imp.reload(config)
-        
+        print(f'TEKRAR {loop}')
+        print('--------------------------------')
         for fold,(train_idxs,val_idxs) in enumerate(zip(train_val_indexs["train"],train_val_indexs["val"])):
             print(f'FOLD {fold}')
             print('--------------------------------')

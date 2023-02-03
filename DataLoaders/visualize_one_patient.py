@@ -8,7 +8,7 @@ import torchvision.transforms as T
 import time
 import torch
 import imutils
-import fiximage
+import roi_crop as fiximage
 
 MAIN_DIR = "/home/alican/Documents/"
 DATASET_DIR = os.path.join(MAIN_DIR,"Datasets/")
@@ -161,13 +161,13 @@ if __name__ == "__main__":
     hastanos = os.listdir(TEKNOFEST)#hastano_from_txt()
     k = 0
     # for hastano in hastanos[k:]:
-    x = four_image_show(822670976)
-    y,norm_imgs = four_image_show_norm(822670976)
-    images = norm_image(norm_imgs)
-    z = get_concat_h(x,y)
-    t = get_concat_h(z,images)
+    x = four_image_show(845282447)
+    # y,norm_imgs = four_image_show_norm(845282447)
+    # images = norm_image(norm_imgs)
+    # z = get_concat_h(x,y)
+    # t = get_concat_h(z,images)
 
-    t.show()
+    x.show()
     # print(k,hastano)
     # input()
     # k += 1

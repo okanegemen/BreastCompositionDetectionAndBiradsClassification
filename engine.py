@@ -50,16 +50,6 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader=None,fold="---")
             with torch.cuda.amp.autocast():
                 outputs = model(images)
                 loss_train = lossFunc(outputs,targets)
-            
-            l1_regularization = 0.
-            l2_regularization = 0.
-            if config.L1regularization:
-                for param in model.parameters():
-                    l1_regularization += param.abs().sum()
-            if config.L2regularization:
-                for param in model.parameters():
-                    l2_regularization += (param**2).sum()
-            loss_train += l1_regularization + l2_regularization
 
             optimizer.zero_grad()
 

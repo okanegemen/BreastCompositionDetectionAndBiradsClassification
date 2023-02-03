@@ -25,11 +25,11 @@ FREEZE_LAYER = 0.                           # baştan % kaç layer ın freeze ed
 NUM_CHANNELS = 1                            # dicomların kaç channel olarak yükleneceğini belirler
 NUM_CLASSES = 3
 
-TEKRAR = 10                                  # aynı eğitimi aynı modeli devam ettirerek kaç defa eğitileceği
+TEKRAR = 3                                  # aynı eğitimi aynı modeli devam ettirerek kaç defa eğitileceği
 CV_K_FOLDS = 4                              # 2 den küçük sayı girilirse sadece train ve test yapılır
-NUM_EPOCHS = 4                              # her fold da olacak epoch sayısı
+NUM_EPOCHS = 6                              # her fold da olacak epoch sayısı
 INIT_LR = 0.00005                            # learning rate
-BATCH_SIZE = 32
+BATCH_SIZE = 16
 
 CAT_MODEL = True
 
@@ -41,16 +41,13 @@ ELIMINATE_CORRUPTED_PATIENTS = False         # kirli verileri sadece train veris
 CLAHE_CLIP = 2                              # clahe fonksiyonunun etki miktarını belirler
 FOCAL_LOSS = True                           # cross entropy üzerine focal loss kullanır
 
-L1regularization = False
-L2regularization = False
-
 INPUT_IMAGE_WIDTH = 128                      # yatay
 INPUT_IMAGE_HEIGHT = 128                     # dikey
 
 CROP_RATIO = 0.9                            # Resmin kırpılma oranına etki eder
 
-NORMALIZE = True                            # Normalize kullanır
+NORMALIZE = False                            # Normalize kullanır
 
-LOAD_NEW_MODEL = False
+LOAD_NEW_MODEL = True
 
 MODEL_PATH = os.path.join(BASE_OUTPUT,"results_models/","concatmodel/ConcatModel_2_1_2_24/ConcatModel.pth")

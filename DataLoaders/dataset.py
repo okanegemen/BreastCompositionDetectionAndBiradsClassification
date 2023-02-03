@@ -2,13 +2,13 @@ if __name__ == "__main__":
     from XLS_utils import XLS 
     from utils import get_class_weights,get_sampler
     import config
-    from visualize_one_patient import four_image_show,tensor_concat
-    import fiximage
+    # from visualize_one_patient import four_image_show,tensor_concat
+    import roi_crop as fiximage
 else:
     from .XLS_utils import XLS 
     from .utils import get_class_weights,get_sampler
     import DataLoaders.config as config
-    import DataLoaders.fiximage as fiximage
+    import DataLoaders.roi_crop as fiximage
 
 # import fiximage
 # from XLS_utils import XLS 
@@ -104,7 +104,7 @@ class Dataset(datasets.VisionDataset):
                                 # T.RandomHorizontalFlip(),
                                 # T.RandomVerticalFlip(),
                                 # T.LinearTransformation(),
-                                T.RandomAutocontrast(0.1),
+                                # T.RandomAutocontrast(0.1),
                                 # T.RandomSolarize(0.3),
                                 # T.RandomPerspective(0.1),
                             )
@@ -113,7 +113,6 @@ class Dataset(datasets.VisionDataset):
         data = self.dataset.iloc[index,:]
         dicti = data.to_dict()
         images = self.loadImg(dicti["HASTANO"])
-
         birads = torch.tensor(dicti["BIRADS KATEGORİSİ"],dtype=torch.int64)
         # acr = torch.tensor(dicti["MEME KOMPOZİSYONU"])
         # kadran_r = torch.tensor(dicti["KADRAN BİLGİSİ (SAĞ)"])
@@ -153,7 +152,7 @@ class Dataset(datasets.VisionDataset):
             # birads = torch.stack([birads,birads,birads,birads])
             # birads = torch.unbind(birads)
 
-        return  image,birads
+        return  image,birads,dicti["HASTANO"]
 
 
     def loadImg(self,hastano):
@@ -161,22 +160,6 @@ class Dataset(datasets.VisionDataset):
         for dcm in self.dcm_names:
             image = self.dicom_open(hastano,dcm)
             image = fiximage.fit_image(image)
-            image = imutils.resize(image,height = config.INPUT_IMAGE_HEIGHT)
-            h,w = image.shape
-
-            if list(dcm)[0] == "R":
-                try:
-                    image = np.pad(image, ((0, 0), (h-w,0)), 'constant')
-                except:
-                    image = image[:,w-h:] # image = image[:,w-h:]
-            else:
-                try:
-                    image = np.pad(image, ((0, 0), (0,h-w)), 'constant')
-                except:
-                    image = image[:,:h]
-            
-            clahe = cv2.createCLAHE(clipLimit = config.CLAHE_CLIP)
-            image = clahe.apply(image)
 
             images[dcm] = image
         return images
@@ -233,11 +216,14 @@ def hastano_from_txt(txt_path = os.path.join(config.MAIN_DIR,"yoloV5","others","
 
 if __name__=="__main__":
     train, test= XLS().return_datasets()
-
+    transform = T.ToPILImage()
     train = Dataset(train,True)
     test = Dataset(test,False)
     print(len(train))
     print(len(test))
 
-    for i in range(29,50):
-        train[i]
+    for i in range(0,100):
+        print(train[i][1])
+        print(train[i][2])
+        transform(train[i][0][0]).show()
+        input()

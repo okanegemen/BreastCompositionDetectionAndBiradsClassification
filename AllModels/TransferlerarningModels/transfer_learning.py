@@ -256,7 +256,7 @@ class FeaturesImg(nn.Module):
         self.conv1 = nn.Conv2d(in_channels=inplanes,out_channels=16,kernel_size=1,bias=False)
         self.bn1 = nn.BatchNorm2d(16)
         self.relu1 = nn.ReLU(inplace=True)
-        self.conv2 = nn.Conv2d(in_channels=16,out_channels=32,kernel_size=5,padding = 2,bias=False)
+        self.conv2 = nn.Conv2d(in_channels=16,out_channels=32,kernel_size=3,padding = 1,bias=False)
         self.bn2 = nn.BatchNorm2d(32)
         self.relu2 = nn.ReLU(inplace=True)
 
@@ -264,6 +264,17 @@ class FeaturesImg(nn.Module):
         self.bn3 = nn.BatchNorm2d(64)
         self.relu3 = nn.ReLU(inplace=True)
 
+        self.conv4 = nn.Conv2d(in_channels=64,out_channels=64,kernel_size=5,padding = 2,bias=False)
+        self.bn4 = nn.BatchNorm2d(64)
+        self.relu4 = nn.ReLU(inplace=True)
+
+        self.conv5 = nn.Conv2d(in_channels=64,out_channels=64,kernel_size=5,padding = 2,bias=False)
+        self.bn5 = nn.BatchNorm2d(64)
+        self.relu5 = nn.ReLU(inplace=True)
+
+        self.conv6 = nn.Conv2d(in_channels=64,out_channels=64,kernel_size=5,padding = 2,bias=False)
+        self.bn6 = nn.BatchNorm2d(64)
+        self.relu6 = nn.ReLU(inplace=True)
 
     def forward(self,inputs):
         out = self.conv1(inputs)
@@ -275,6 +286,15 @@ class FeaturesImg(nn.Module):
         out = self.conv3(out)
         out = self.bn3(out)
         out = self.relu3(out)
+        out = self.conv4(out)
+        out = self.bn4(out)
+        out = self.relu4(out)
+        out = self.conv5(out)
+        out = self.bn5(out)
+        out = self.relu5(out)
+        out = self.conv6(out)
+        out = self.bn6(out)
+        out = self.relu6(out)
         return out
 
 class SEBlock(nn.Module):
@@ -305,19 +325,32 @@ class ConcatModel(nn.Module):
         self.ch_drop = nn.Dropout2d()
 
         firstBlock,firstBody,body  = self._modifyFirstLayertakeBody(model=model,in_channels = 256)
+
         if  firstBody !=0 :
             self.featureExtrator = nn.Sequential(*firstBlock,*firstBody,*body)
         else:self.featureExtrator = nn.Sequential(*firstBlock,*body)
 
         buffer,linear = self._changeLastlayer(model)
         if linear !=0 :
-            self.birads = nn.Sequential(linear,nn.Linear(buffer[0].in_features,3))
-            self.composition = nn.Sequential(linear,nn.Linear(buffer[0].in_features,4))
-            self.kadran = nn.Sequential(linear,nn.Linear(buffer[0].in_features,10))
+            self.birads = torch.nn.Sequential(
+                                torch.nn.Linear(buffer[0].in_features,256),
+                                torch.nn.Dropout(),
+                                torch.nn.Linear(256,64),
+                                torch.nn.Dropout(),
+                                torch.nn.Linear(64,3)
+                            )
+            # self.composition = nn.Sequential(linear,nn.Linear(buffer[0].in_features,4))
+            # self.kadran = nn.Sequential(linear,nn.Linear(buffer[0].in_features,10))
         else:
-            self.birads = nn.Linear(buffer[0].in_features,3)
-            self.composition = nn.Linear(buffer[0].in_features,4)
-            self.kadran = nn.Linear(buffer[0].in_features,10)
+            self.birads = torch.nn.Sequential(
+                                torch.nn.Linear(buffer[0].in_features,256),
+                                torch.nn.Dropout(),
+                                torch.nn.Linear(256,64),
+                                torch.nn.Dropout(),
+                                torch.nn.Linear(64,3)
+                            )
+            # self.composition = nn.Linear(buffer[0].in_features,4)
+            # self.kadran = nn.Linear(buffer[0].in_features,10)
 
     def forward(self,inputs):
 
@@ -371,6 +404,7 @@ class ConcatModel(nn.Module):
             except:
                 
                 if count==1:
+                    print(buffer)
                     firstBlock.append(buffer[0][0])
                     break
                     
