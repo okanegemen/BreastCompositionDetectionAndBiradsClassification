@@ -2,7 +2,7 @@ from DataLoaders.dataset import Dataset
 from DataLoaders.XLS_utils import XLS
 # from Pytorch_model.unet import UNet as load_model
 from AllModels.TransferlerarningModels.transfer_learning import ConcatModel as load_model
-from torchvision.models import resnet34 as upload_model,ResNet34_Weights as upload_weight
+from torchvision.models import efficientnet_v2_s as upload_model,EfficientNet_V2_S_Weights as upload_weight
 # from AllModels.unet_model import UNet as upload_model
 
 import DataLoaders.config as config
@@ -26,6 +26,8 @@ from engine import testing,training
 import json
 import imp
 import shutil
+import gc
+gc.collect()
 
 
 def collate_fn(batch):
@@ -103,8 +105,8 @@ def get_model():
 def get_others(model):
 
     lossFunc = Loss()
-    # opt = RMSprop(model.parameters(),lr=config.INIT_LR)
-    opt = Adam(model.parameters(), lr=config.INIT_LR,weight_decay=1e-4)#,weight_decay=1e-6
+    # opt = RMSprop(model.parameters(),lr=config.INIT_LR,weight_decay=1e-5)
+    opt = Adam(model.parameters(), lr=config.INIT_LR,weight_decay=1e-5)#,weight_decay=1e-6
     print("LossFunc:",lossFunc)
     print("Optimizer:",opt)
 
@@ -122,7 +124,7 @@ def save_model_and_metrics(model,fold_metrics):
     with open(os.path.join(config.SAVE_FOLDER,name,model.__class__.__name__+".json"),"w") as f:
         f.write(jso)
 
-    srcs = ["DataLoaders/XLS_utils.py","DataLoaders/fiximage.py","DataLoaders/dataset.py","DataLoaders/config.py","main.py","engine.py","AllModels/TransferlerarningModels/transfer_learning.py"]
+    srcs = ["DataLoaders/XLS_utils.py","DataLoaders/fiximage.py","DataLoaders/roi_crop.py","DataLoaders/dataset.py","DataLoaders/config.py","main.py","engine.py","AllModels/TransferlerarningModels/transfer_learning.py"]
     for src in srcs:
         dst = os.path.join(config.BASE_OUTPUT,"results_models",name,src.split("/")[-1].split(".")[0]+".txt")
         shutil.copyfile(os.path.join(config.BASE_OUTPUT,src),dst)

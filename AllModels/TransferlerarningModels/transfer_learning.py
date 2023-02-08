@@ -276,6 +276,15 @@ class FeaturesImg(nn.Module):
         self.bn6 = nn.BatchNorm2d(64)
         self.relu6 = nn.ReLU(inplace=True)
 
+        self.conv7 = nn.Conv2d(in_channels=64,out_channels=64,kernel_size=5,padding = 2,bias=False)
+        self.bn7 = nn.BatchNorm2d(64)
+        self.relu7 = nn.ReLU(inplace=True)
+
+        self.conv8 = nn.Conv2d(in_channels=64,out_channels=64,kernel_size=5,padding = 2,bias=False)
+        self.bn8 = nn.BatchNorm2d(64)
+        self.relu8 = nn.ReLU(inplace=True)
+
+
     def forward(self,inputs):
         out = self.conv1(inputs)
         out = self.bn1(out)
@@ -295,6 +304,12 @@ class FeaturesImg(nn.Module):
         out = self.conv6(out)
         out = self.bn6(out)
         out = self.relu6(out)
+        out = self.conv7(out)
+        out = self.bn7(out)
+        out = self.relu7(out)
+        out = self.conv8(out)
+        out = self.bn8(out)
+        out = self.relu8(out)
         return out
 
 class SEBlock(nn.Module):

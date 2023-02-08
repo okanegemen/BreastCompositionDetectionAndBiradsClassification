@@ -12,6 +12,10 @@ import scipy.ndimage as ndi
 from fiximage import fit_image
 import pandas as pd
 import cv2
+import cv2
+import shutil
+import imutils
+from tqdm import tqdm
 
 gc.collect()
 dcm_names = ["LCC","LMLO","RCC","RMLO"]
@@ -25,11 +29,21 @@ def eliminate_unused_dicoms(dicom_folders:dict,dataset:pd.DataFrame):
     dataset = dataset[dataset["HASTANO"].isin(dicom_folders)]
     return dataset
 
-def dicom_open(path):
+# def dicom_open(path):
+#     dicom_img = pydicom.dcmread(path)
+#     numpy_pixels = dicom_img.pixel_array
+#     print(numpy_pixels.shape)
+#     return dicom_img,numpy_pixels
+
+def dicom_open(hastano,dcm):
+    path = os.path.join(config.TEKNOFEST,hastano,dcm)
     dicom_img = pydicom.dcmread(path)
     numpy_pixels = dicom_img.pixel_array
-    print(numpy_pixels.shape)
-    return dicom_img,numpy_pixels
+    image = numpy_pixels-numpy_pixels.min()
+    image = image/image.max()
+    if image.mean()>0.5:
+        image = 1-image
+    return image
 
 def get_concat_h(im1, im2):
     dst = Image.new('L', (im1.width + im2.width, im1.height))
@@ -75,18 +89,15 @@ def hastano_from_dir():
     
 
 if __name__ == "__main__":
-
-    patients = hastano_from_txt()#list(set([int(i) for i in os.listdir(TEKNOFEST) if len(i.split("."))<2]))
-    images = []
-    k = 0#113
-    for i,folder in enumerate(patients[k:]):
-        four_image_show(folder)
-        print(k+i,folder)
-        a = input()
-
-        # if a == 'n':
-        #     with open(os.path.join(DATASET_DIR,"images.txt"), "a") as text_file:
-        #         text_file.write(str(folder)+"\n")
-
-
-
+    path = "/home/alican/Documents/Datasets/TeknofestPNG"
+    to_path = "/home/alican/Documents/Datasets/TeknofestExtractedPNG"
+    patients = list(set([i for i in os.listdir(path) if len(i.split("."))<2]))
+    for patient in tqdm(patients):
+        patient_path = os.path.join(path,patient)
+        # os.makedirs(patient_path)
+        mammos = os.listdir(patient_path)
+        for mammo in mammos:
+            # image_np = dicom_open(patient,mammo)
+            # image_np = imutils.resize(image_np,height=800)
+            # cv2.imwrite(patient_path+"/"+mammo.split(".")[0]+".png", image_np*255)
+            shutil.copyfile(os.path.join(patient_path,mammo),os.path.join(to_path,patient+"_"+mammo))

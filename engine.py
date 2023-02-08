@@ -106,7 +106,7 @@ def training(model, trainLoader, lossFunc, optimizer, valLoader=None,fold="---")
                         tw.set_infos({"loss":"%.4f"%temp_loss,
                                     **scores_val.metrics()})
 
-        if fold % config.SAVE_MODEL_PER_FOLD == 0:
+        if fold % config.SAVE_MODEL_PER_FOLD == 0 and epoch ==config.NUM_EPOCHS-1:
             imp.reload(config)
             name = ""+model.__class__.__name__+"_fold"+str(fold)+"_epoch"+str(epoch)+"_date"+config.DATE_FOLDER
             os.makedirs(os.path.join(config.MID_FOLDER,name))

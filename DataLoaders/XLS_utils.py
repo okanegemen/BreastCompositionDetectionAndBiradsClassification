@@ -5,11 +5,11 @@ import ast
 from torch.utils.data import SubsetRandomSampler
 from sklearn.model_selection import KFold
 import glob
-import config
-# if __name__ == "__main__":
-#     import config
-# else:
-#     import DataLoaders.config as config
+# import config
+if __name__ == "__main__":
+    import config
+else:
+    import DataLoaders.config as config
 
 # importing
 class XLS():

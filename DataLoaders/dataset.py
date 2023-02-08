@@ -10,7 +10,7 @@ else:
     import DataLoaders.config as config
     import DataLoaders.roi_crop as fiximage
 
-# import fiximage
+# import roi_crop as fiximage
 # from XLS_utils import XLS 
 # from utils import get_class_weights,get_sampler
 # import config
@@ -32,42 +32,61 @@ import cv2
 import time
 import imutils
 
-def get_transforms(train=True):
+# Albumentations Colab Code
+# https://colab.research.google.com/github/albumentations-team/albumentations_examples/blob/colab/example.ipynb#scrollTo=k4vy47S3vTt2
+def alb_transforms(train=True):
     if train:
-        transform = torch.nn.Sequential(
-                            T.RandomErasing(scale=(0.01,0.01)),
-                            # T.RandomInvert(),
-                            T.RandomRotation(4,expand=True),
-                            # T.RandomAffine(3),
-                            # T.RandomHorizontalFlip(),
-                            # T.RandomVerticalFlip(),
-                            # T.LinearTransformation(),
-                            # T.RandomAutocontrast(1.0),
-                            # T.RandomSolarize(0.3),
-                            # T.RandomPerspective(0.1),
-                       )
-
-        transform_cpu = T.Compose([
-                            T.ToPILImage(),
-                            # T.Pad((p,p,p,p)),
-                            T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
-                            T.RandomCrop((int(config.INPUT_IMAGE_HEIGHT-5),int(config.INPUT_IMAGE_WIDTH-5))),
-                            # T.GaussianBlur(5),
-                            T.ToTensor(),
-        ])
+        transform = A.Compose([
+            # A.RandomCrop(int(config.INPUT_IMAGE_HEIGHT-5),int(config.INPUT_IMAGE_WIDTH-5),always_apply=True),
+            A.PixelDropout(0.01,drop_value=random.random()*255),
+            # A.RandomToneCurve(),                        #koyuları daha koyu beyazları daha beyaz yapar  -
+            # A.RandomBrightness(),
+            # A.HorizontalFlip(p=0.5),
+            A.RandomBrightnessContrast(),        
+            # A.ShiftScaleRotate(),                  # resmi dönderir dönderirken boş kalan kısma resmi yansıtır --
+            A.GridDistortion(),                         # resmi kareler halinde şeklini değiştiriyor ---
+            # A.HueSaturationValue(),                     # renk değiştirir. RGB resimler için
+            # A.Blur(),
+            A.Transpose(),
+            # A.RandomRotate90(),
+            # A.CLAHE(),
+            A.GaussNoise(),
+            A.Flip(),
+            A.MotionBlur(p=0.75),
+            # A.MedianBlur(),
+            # A.PiecewiseAffine(),
+            A.Sharpen(),
+            # A.Emboss(),
+            A.OpticalDistortion(),                      # resmin merkezinden distort_limit e göre dışa doğru gerdirir -
+            # A.Equalize(),
+            A.Resize(config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH,always_apply=True),
+    ])
     else:
-        transform = T.Compose([
-                            T.ToPILImage(),
-                            # T.Pad((p,p,p,p)),
-                            T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
-                            # T.RandomCrop((int(config.INPUT_IMAGE_HEIGHT*config.CROP_RATIO),int(config.INPUT_IMAGE_WIDTH*config.CROP_RATIO))),
-                            # T.CenterCrop((int(config.INPUT_IMAGE_HEIGHT*config.CROP_RATIO),int(config.INPUT_IMAGE_WIDTH*config.CROP_RATIO))),
-                            # T.GaussianBlur(5),
-                            T.ToTensor(),
-                        ])
-        transform_cpu = None
-    return transform,transform_cpu
-
+        transform = A.Compose([
+            A.Resize(config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH,always_apply=True,p=1),
+            # A.RandomToneCurve(),                        #koyuları daha koyu beyazları daha beyaz yapar  -
+            # A.RandomBrightness(),
+            # # A.HorizontalFlip(p=0.5),
+            # A.RandomBrightnessContrast(),        
+            # A.RandomCrop(int(config.INPUT_IMAGE_HEIGHT-5),int(config.INPUT_IMAGE_WIDTH-5)),
+            # A.ShiftScaleRotate(),                  # resmi dönderir dönderirken boş kalan kısma resmi yansıtır --
+            # A.GridDistortion(),                         # resmi kareler halinde şeklini değiştiriyor ---
+            # # A.HueSaturationValue(),                     # renk değiştirir. RGB resimler için
+            # A.Blur(),
+            # # A.Transpose(),
+            # # A.RandomRotate90(),
+            # A.CLAHE(),
+            # A.GaussNoise(),
+            # # A.Flip(),
+            # A.MotionBlur(),
+            # A.MedianBlur(),
+            # A.PiecewiseAffine(),
+            # A.Sharpen(),
+            # A.Emboss(),
+            # A.OpticalDistortion(),                      # resmin merkezinden distort_limit e göre dışa doğru gerdirir -
+            # A.Equalize()
+    ])
+    return transform
 
 class Dataset(datasets.VisionDataset):
     def __init__(self,dataset: pd.DataFrame,train_transform=True,val=False):
@@ -83,10 +102,10 @@ class Dataset(datasets.VisionDataset):
 
         self.dcm_names = ["LCC","LMLO","RCC","RMLO"]
 
-        self.norm_T = T.Compose([T.Normalize([0.1525, 0.1502, 0.1543, 0.1522],[0.2215, 0.2315, 0.2231, 0.2336],True)])
+        self.norm_T = T.Compose([T.Normalize([0.2173, 0.2275, 0.2188, 0.2292],[0.2995, 0.3037, 0.3005, 0.3046],True)])
         self.dataset = dataset
         self.dataset_name = config.TEKNOFEST
-        self.transform,self.transform_cpu = get_transforms(train_transform)
+        self.transform = alb_transforms(train_transform)
 
         self.dicom_paths = self.dicom_paths_func()
         self.dataset = self.eliminate_unused_dicoms(self.dicom_paths,self.dataset) # eliminates rows in dataframe of dataset which are not in the image directory, deleted or moved
@@ -97,35 +116,36 @@ class Dataset(datasets.VisionDataset):
         self.sampler = get_sampler(self.ids,class_weights)
 
         self.class0_T = torch.nn.Sequential(
-                                # T.RandomErasing(scale=(0.01,0.01)),
+                                T.RandomErasing(scale=(0.01,0.01)),
                                 # T.RandomInvert(),
-                                # T.RandomRotation(4,expand=True),
-                                # T.RandomAffine(3),
+                                T.RandomRotation(4,expand=True),
+                                T.RandomAffine(3),
                                 # T.RandomHorizontalFlip(),
                                 # T.RandomVerticalFlip(),
                                 # T.LinearTransformation(),
-                                # T.RandomAutocontrast(0.1),
+                                T.RandomAutocontrast(0.1),
                                 # T.RandomSolarize(0.3),
-                                # T.RandomPerspective(0.1),
+                                T.RandomPerspective(0.1),
+                                T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH))
                             )
 
     def __getitem__(self, index: int):
+        a = time.time()
         data = self.dataset.iloc[index,:]
         dicti = data.to_dict()
         images = self.loadImg(dicti["HASTANO"])
+
         birads = torch.tensor(dicti["BIRADS KATEGORİSİ"],dtype=torch.int64)
         # acr = torch.tensor(dicti["MEME KOMPOZİSYONU"])
         # kadran_r = torch.tensor(dicti["KADRAN BİLGİSİ (SAĞ)"])
         # kadran_l = torch.tensor(dicti["KADRAN BİLGİSİ (SOL)"])
 
         for name,image in images.items():
-            images[name] = torch.from_numpy(image).float().unsqueeze(0)/255.
-
-            images[name] = self.transform(images[name])
+            images[name] = self.transform(image=image)["image"]
+            images[name] = torch.from_numpy(images[name]).float().unsqueeze(0)/255.
             if self.train_transform:
-                images[name] = self.transform_cpu(images[name].to("cpu"))
-                if birads == 0:
-                    images[name] = self.class0_T(images[name])
+                # if False:   #birads == 0:
+                images[name] = self.class0_T(images[name])
 
         images = {key:image for key,image in images.items()}
 
@@ -151,8 +171,7 @@ class Dataset(datasets.VisionDataset):
 
             # birads = torch.stack([birads,birads,birads,birads])
             # birads = torch.unbind(birads)
-
-        return  image,birads,dicti["HASTANO"]
+        return  image,birads#,dicti["HASTANO"]
 
 
     def loadImg(self,hastano):
@@ -160,7 +179,22 @@ class Dataset(datasets.VisionDataset):
         for dcm in self.dcm_names:
             image = self.dicom_open(hastano,dcm)
             image = fiximage.fit_image(image)
+            image = imutils.resize(image,height = config.INPUT_IMAGE_HEIGHT)
+            h,w = image.shape
 
+            if list(dcm)[0] == "R":
+                try:
+                    image = np.pad(image, ((0, 0), (h-w,0)), 'constant')
+                except:
+                    image = image[:,w-h:] # image = image[:,w-h:]
+            else:
+                try:
+                    image = np.pad(image, ((0, 0), (0,h-w)), 'constant')
+                except:
+                    image = image[:,:h]
+            
+            clahe = cv2.createCLAHE(clipLimit = config.CLAHE_CLIP)
+            image = clahe.apply(image)
             images[dcm] = image
         return images
 
@@ -178,7 +212,7 @@ class Dataset(datasets.VisionDataset):
         path = os.path.join(config.TEKNOFEST,hastano,dcm+".dcm")
         dicom_img = pydicom.dcmread(path)
         numpy_pixels = dicom_img.pixel_array
-        numpy_pixels = imutils.resize(numpy_pixels,height=config.INPUT_IMAGE_HEIGHT*3)
+        numpy_pixels = imutils.resize(numpy_pixels,height=1000)
         return numpy_pixels
 
     @classmethod
@@ -224,6 +258,6 @@ if __name__=="__main__":
 
     for i in range(0,100):
         print(train[i][1])
-        print(train[i][2])
+        # print(train[i][2])
         transform(train[i][0][0]).show()
         input()
