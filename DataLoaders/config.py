@@ -28,8 +28,8 @@ NUM_CLASSES = 3
 TEKRAR = 3                                  # aynı eğitimi aynı modeli devam ettirerek kaç defa eğitileceği
 CV_K_FOLDS = 4                              # 2 den küçük sayı girilirse sadece train ve test yapılır
 NUM_EPOCHS = 5                              # her fold da olacak epoch sayısı
-INIT_LR = 0.00001                           # learning rate
-BATCH_SIZE = 8
+INIT_LR = 0.00005                            # learning rate
+BATCH_SIZE = 4
 
 CAT_MODEL = True
 
@@ -41,13 +41,13 @@ ELIMINATE_CORRUPTED_PATIENTS = True         # kirli verileri sadece train verisi
 CLAHE_CLIP = 2                              # clahe fonksiyonunun etki miktarını belirler
 FOCAL_LOSS = True                           # cross entropy üzerine focal loss kullanır
 
-INPUT_IMAGE_WIDTH = 128                     # yatay
-INPUT_IMAGE_HEIGHT = 128                     # dikey
+INPUT_IMAGE_WIDTH = 226                     # yatay
+INPUT_IMAGE_HEIGHT = 226                     # dikey
 
 CROP_RATIO = 0.9                            # Resmin kırpılma oranına etki eder
 
-NORMALIZE = True                            # Normalize kullanır
+NORMALIZE = False                            # Normalize kullanır
 
-LOAD_NEW_MODEL = False
+LOAD_NEW_MODEL = True
 
 MODEL_PATH = os.path.join(BASE_OUTPUT,"results_models/","ConcatModel_2_6_2_1/ConcatModel.pth")

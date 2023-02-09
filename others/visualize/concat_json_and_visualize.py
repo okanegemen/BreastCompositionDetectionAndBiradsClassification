@@ -4,18 +4,29 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
+def get_value_from_list_dict(x:dict,train:bool=True):
+    if train:
+        a = [d for d in x["train"]]
+        b = [d for d in x["val"]]
+        return a,b
+    else:
+        a = [d for d in x]
+        return a
 
 def concatJson(path1:str,path2:str,wantedPath:str=None):
      
+    j1 = open(path1)
+    j2 = open(path2)
 
-    with open(path1) as j1,open(path2) as j2:
-        data1 = json.load(j1)
-        data2 = json.load(j2)
-    j1.close()
-    j2.close()
-    result = merge(data1,data2)
+    data1 = json.load(j1)
+    data2 = json.load(j2)
+
+    training = data1["training"] + data2["training"]
+    test = data1["test"] + data2["test"]
+
+    result = {"training":training,"test":test}
+
     splitted = path1.split("/")
-    print(path1[:-5])
     if wantedPath is None:
 
         print(path1[-5])
@@ -29,6 +40,7 @@ def concatJson(path1:str,path2:str,wantedPath:str=None):
         else:
             name = wantedPath + "/" + splitted[-1][:-5] + "_c" +".json"
 
+    print(name)
     with open(name,"w") as f:
         json.dump(result,f)
     
@@ -53,10 +65,10 @@ def plot_acc(path:str):
         except KeyError:
             train_val = buffer["train"]
         for val in range(len(valid_val)):
-            val_acc.append(valid_val[val]["acc"]*100)
+            val_acc.append(valid_val[val]["f1"]*100)
         for train in range(len(train_val)):
 
-            train_acc.append(train_val[train]["acc"]*100)
+            train_acc.append(train_val[train]["f1"]*100)
     
 
     
@@ -71,3 +83,7 @@ def plot_acc(path:str):
     plt.ylabel("Accuracy")
     plt.title("Epoch bazlı başarı oranı grafiği")
     plt.legend()
+
+path1 = """/home/alican/Documents/yoloV5/results_models/ConcatModel_2_4_12_57/ConcatModel.json"""
+path2 = """/home/alican/Documents/yoloV5/results_models/ConcatModel_2_4_17_8/ConcatModel.json"""
+concatJson(path1,path2)

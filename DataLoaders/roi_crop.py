@@ -33,125 +33,79 @@ def mask_external_contour(pixels):
     return  pixels
 
 def fit_image(X):
+    # start = time.time()
 
     h,w = X.shape
-    ratio = (4*(1-config.CROP_RATIO)/10)
-    X = X[int(config.INPUT_IMAGE_HEIGHT*0.95):,:]
-    h_c,w_c = X.shape
+    X = X[int(config.INPUT_IMAGE_HEIGHT*0.15):,:]
+
     X = true_norm(X)
     if X.mean()>120.:
         X = 255 - X
 
-    clahe = cv2.createCLAHE(clipLimit = 2)
-    X = clahe.apply(X)
+    # clahe = cv2.createCLAHE(clipLimit = 2,tileGridSize=(3,3))
+    # X = clahe.apply(X)
+    X = (X/255)**3
+    X = true_norm(X)
 
-    X = X*(X>23) #57
-    clahe = cv2.createCLAHE(clipLimit = 20)
-    X = clahe.apply(X)
-
-    X = X*(X>23) #57
     X = mask_external_contour(X).astype(np.uint8)
-    X = cv2.equalizeHist(X)
+    X = np.sqrt(X)
+    X = true_norm(X)
 
-    clahe = cv2.createCLAHE(clipLimit = 20)
+    clahe = cv2.createCLAHE(clipLimit = 10,tileGridSize=(50,50))
     X = clahe.apply(X)
 
+    # X = cv2.Laplacian(X,cv2.CV_64F, ksize=5)
+
+    # gaussian blur
+    X = cv2.medianBlur(X,3)
+    # X = cv2.GaussianBlur(X,(5,5),0)
+    X = cv2.fastNlMeansDenoising(X, None, 8, 8, 8) 
+
+    X = (X/255)**2
+    X = true_norm(X)
+    # kernel_sharpening = np.array([[-1,-1,-1],
+    #                           [-1, 9,-1],
+    #                           [-1,-1,-1]])
+
+    # X = cv2.filter2D(X, -1, kernel_sharpening)
+
+    # X = cv2.calcHist(X,[0], None, [256], [0,256])
+    # clahe = cv2.createCLAHE(clipLimit = 20)
+    # X = clahe.apply(X)
+
+    # X = mask_external_contour(X).astype(np.uint8)
     h,w = X.shape
+
     if h/w>2:
         X = cv2.resize(X, dsize=(w,int(w*2)), interpolation=cv2.INTER_CUBIC)
-    h,w = X.shape
 
-    X = X*(X>23) #57
-    length = 15
-    L = (imutils.resize(X,height=length)>20).astype(np.uint8)
-    ratio = int(h_c/length)
-
-    u_i = 0
-    l_i = length
-    for i in range(int(length/4)):
-        if 5>sum(L[i]):
-            u_i =i
-        if 5>sum(L[length-1-i]):
-            l_i = length-1-i
-
-    # L = np.transpose(L)
-    # length_T = L.shape[0]
-    # ratio_T = int(w_c/length_T +1)
-
-    # le_i = 0
-    # ri_i = length_T
-    # for i in range(int(length_T/2)):
-    #     if sum(L[i])!=0 and le_i==0:
-    #         le_i =i
-    #     if sum(L[length_T-1-i])!=0 and ri_i>length_T-1:
-    #         ri_i = length_T-1-i
-    a = int((u_i-2)*ratio)
-    b = int((l_i+1)*ratio)
-    if a<0:
-        a = 0
-    if b>h_c:
-        b = h_c
-
-    X = X[a:b,:] #int((le_i-2)*ratio_T):int((ri_i+1)*ratio_T)
-    # X = imutils.resize(X,height = config.INPUT_IMAGE_HEIGHT)
-    # h,w = X.shape
-    # if h/w>2.7:
-    #     X = X[int(h-w*2.7):,:]
+    # length = 15
     # L = (imutils.resize(X,height=length)>0).astype(np.uint8)
+    # ratio = int(h_c/length)
 
-    # h,w = X.shape
-    # ratio = h/L.shape[0]
-    # del_up_pix = 0
-    # a = 0.00
-    # l_h,l_w = L.shape
-    # while True:
-    #     g_h,g_w = ndi.center_of_mass(L)
-    #     # g_h = int(g_h+0.5)
-    #     if len(L)*0.48<g_h:
-    #         break
-    #     else:
-    #         L = L[1:,:]
-    #         del_up_pix += 1
-    
-    # try:
-    #     a =  int((del_up_pix-1)*ratio)
-    #     if a<0:
-    #         raise 
-    # except:
+    # u_i = 0
+    # l_i = length
+    # for i in range(int(length/2)):
+    #     if (length/4)>sum(L[i]):
+    #         u_i =i
+    #     if (length/4)>sum(L[length-1-i]):
+    #         l_i = length-1-i
+
+    # a = int((u_i)*ratio)
+    # b = int((l_i)*ratio)
+    # if a<0:
     #     a = 0
+    # if b>h_c:
+    #     b = h_c
 
-    # try:
-    #     b =  int((del_up_pix+g_h*2+1)*ratio)
-    #     if b>h:
-    #         raise 
-    # except:
-    #     b=int(l_w*ratio)
-
-    # try:
-    #     c =  int(g_w+w*0.4-w/2)
-    #     if c<0:
-    #         raise 
-    # except:
-    #     c = 0
-
-    # try:
-    #     d =  int(g_w+w*0.4+w/2)
-    #     if d>w:
-    #         raise 
-    # except:
-    #     d=w
-    # t = X[a:b,:]
-    # if t.shape[0]*t.shape[1]<200:
-    #     pass
-    # else:
-    #     X = t
-
+    # X = X[a:b,:]
+    clahe = cv2.createCLAHE(clipLimit = 2)
+    X = clahe.apply(X)
+    X = true_norm(X)
+    # print(time.time()-start)
+    
     # cv2.imshow("img",X)
     # cv2.waitKey(0)
-
-    # X = cv2.equalizeHist(X)
-    # clahe = cv2.createCLAHE(clipLimit = config.CLAHE_CLIP)
-    # X = clahe.apply(X)
     return X
 
 if __name__ == "__main__":

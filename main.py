@@ -160,6 +160,7 @@ def base():
         for fold,(train_idxs,val_idxs) in enumerate(zip(train_val_indexs["train"],train_val_indexs["val"])):
             print(f'FOLD {fold}')
             print('--------------------------------')
+            metrics = {"train":[],"val":[]}
 
             train = Dataset(train_val.iloc[train_idxs],True)
             val = Dataset(train_val.iloc[val_idxs],False,True)
@@ -169,7 +170,7 @@ def base():
             trainLoader = DataLoader(train,sampler=train.sampler, batch_size=config.BATCH_SIZE, num_workers=4,collate_fn=collate_fn)
             valLoader = DataLoader(val, shuffle=False, batch_size=config.BATCH_SIZE, num_workers=4,collate_fn=collate_fn)
 
-            training_metrics = training(model,trainLoader,lossFunc,opt,valLoader,fold)
+            training_metrics = training(model,trainLoader,lossFunc,opt,metrics,valLoader,fold)
             metrics["training"].append(training_metrics)
 
         test_metrics = testing(model,lossFunc,testLoader)

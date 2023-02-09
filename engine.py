@@ -13,10 +13,9 @@ def focal_loss(outputs,targets, alpha=1, gamma=2):
     focal_loss = (alpha * (1-pt)**gamma * ce_loss).mean()
     return focal_loss
 
-def training(model, trainLoader, lossFunc, optimizer, valLoader=None,fold="---"):
+def training(model, trainLoader, lossFunc, optimizer,metrics, valLoader=None,fold="---"):
     if config.FOCAL_LOSS:
-        loss_Func = focal_loss
-    metrics = {"train":[],"val":[]}
+        lossFunc = focal_loss
 
     # loop over epochs
     print("[INFO] training the network...")

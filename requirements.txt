@@ -14,3 +14,4 @@ torchmetrics
 imutils
 kaleido
 albumentations
+plotly

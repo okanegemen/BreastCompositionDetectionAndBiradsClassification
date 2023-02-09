@@ -38,13 +38,13 @@ def alb_transforms(train=True):
     if train:
         transform = A.Compose([
             # A.RandomCrop(int(config.INPUT_IMAGE_HEIGHT-5),int(config.INPUT_IMAGE_WIDTH-5),always_apply=True),
-            A.PixelDropout(0.01,drop_value=random.random()*255),
+            A.PixelDropout(0.02),
             # A.RandomToneCurve(),                        #koyuları daha koyu beyazları daha beyaz yapar  -
             # A.RandomBrightness(),
             # A.HorizontalFlip(p=0.5),
-            A.RandomBrightnessContrast(),        
+            # A.RandomBrightnessContrast(),        
             # A.ShiftScaleRotate(),                  # resmi dönderir dönderirken boş kalan kısma resmi yansıtır --
-            A.GridDistortion(),                         # resmi kareler halinde şeklini değiştiriyor ---
+            # A.GridDistortion(),                         # resmi kareler halinde şeklini değiştiriyor ---
             # A.HueSaturationValue(),                     # renk değiştirir. RGB resimler için
             # A.Blur(),
             A.Transpose(),
@@ -52,12 +52,12 @@ def alb_transforms(train=True):
             # A.CLAHE(),
             A.GaussNoise(),
             A.Flip(),
-            A.MotionBlur(p=0.75),
+            A.MotionBlur(3,p=0.75),
             # A.MedianBlur(),
             # A.PiecewiseAffine(),
-            A.Sharpen(),
+            # A.Sharpen(),
             # A.Emboss(),
-            A.OpticalDistortion(),                      # resmin merkezinden distort_limit e göre dışa doğru gerdirir -
+            # A.OpticalDistortion(),                      # resmin merkezinden distort_limit e göre dışa doğru gerdirir -
             # A.Equalize(),
             A.Resize(config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH,always_apply=True),
     ])
@@ -102,7 +102,7 @@ class Dataset(datasets.VisionDataset):
 
         self.dcm_names = ["LCC","LMLO","RCC","RMLO"]
 
-        self.norm_T = T.Compose([T.Normalize([0.2173, 0.2275, 0.2188, 0.2292],[0.2995, 0.3037, 0.3005, 0.3046],True)])
+        self.norm_T = T.Compose([T.Normalize([0.2173, 0.2275, 0.2188, 0.2292],[0.2995, 0.3037, 0.3005, 0.3046])])
         self.dataset = dataset
         self.dataset_name = config.TEKNOFEST
         self.transform = alb_transforms(train_transform)
@@ -118,14 +118,14 @@ class Dataset(datasets.VisionDataset):
         self.class0_T = torch.nn.Sequential(
                                 T.RandomErasing(scale=(0.01,0.01)),
                                 # T.RandomInvert(),
-                                T.RandomRotation(4,expand=True),
-                                T.RandomAffine(3),
+                                # T.RandomRotation(4,expand=True),
+                                # T.RandomAffine(3),
                                 # T.RandomHorizontalFlip(),
                                 # T.RandomVerticalFlip(),
                                 # T.LinearTransformation(),
-                                T.RandomAutocontrast(0.1),
+                                # T.RandomAutocontrast(0.1),
                                 # T.RandomSolarize(0.3),
-                                T.RandomPerspective(0.1),
+                                # T.RandomPerspective(0.1),
                                 T.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH))
                             )
 
@@ -133,13 +133,13 @@ class Dataset(datasets.VisionDataset):
         a = time.time()
         data = self.dataset.iloc[index,:]
         dicti = data.to_dict()
+        birads = torch.tensor(dicti["BIRADS KATEGORİSİ"],dtype=torch.int64)
         images = self.loadImg(dicti["HASTANO"])
 
-        birads = torch.tensor(dicti["BIRADS KATEGORİSİ"],dtype=torch.int64)
         # acr = torch.tensor(dicti["MEME KOMPOZİSYONU"])
         # kadran_r = torch.tensor(dicti["KADRAN BİLGİSİ (SAĞ)"])
         # kadran_l = torch.tensor(dicti["KADRAN BİLGİSİ (SOL)"])
-
+        
         for name,image in images.items():
             images[name] = self.transform(image=image)["image"]
             images[name] = torch.from_numpy(images[name]).float().unsqueeze(0)/255.
@@ -151,7 +151,7 @@ class Dataset(datasets.VisionDataset):
 
         image = torch.stack([image.squeeze() for image in images.values()])
         if config.NORMALIZE:
-                self.norm_T(image)
+                norm_image = self.norm_T(image)
 
         # target = {
         #     "birads":birads,
@@ -178,23 +178,25 @@ class Dataset(datasets.VisionDataset):
         images = {}
         for dcm in self.dcm_names:
             image = self.dicom_open(hastano,dcm)
+            image = imutils.resize(image,height = 512)
             image = fiximage.fit_image(image)
             image = imutils.resize(image,height = config.INPUT_IMAGE_HEIGHT)
             h,w = image.shape
 
-            if list(dcm)[0] == "R":
-                try:
-                    image = np.pad(image, ((0, 0), (h-w,0)), 'constant')
-                except:
-                    image = image[:,w-h:] # image = image[:,w-h:]
-            else:
-                try:
-                    image = np.pad(image, ((0, 0), (0,h-w)), 'constant')
-                except:
-                    image = image[:,:h]
+            if config.INPUT_IMAGE_WIDTH==config.INPUT_IMAGE_HEIGHT:
+                if list(dcm)[0] == "R":
+                    try:
+                        image = np.pad(image, ((0, 0), (h-w,0)), 'constant')
+                    except:
+                        image = image[:,w-h:] # image = image[:,w-h:]
+                else:
+                    try:
+                        image = np.pad(image, ((0, 0), (0,h-w)), 'constant')
+                    except:
+                        image = image[:,:h]
             
-            clahe = cv2.createCLAHE(clipLimit = config.CLAHE_CLIP)
-            image = clahe.apply(image)
+            # clahe = cv2.createCLAHE(clipLimit = config.CLAHE_CLIP)
+            # image = clahe.apply(image)
             images[dcm] = image
         return images
 
@@ -257,7 +259,9 @@ if __name__=="__main__":
     print(len(test))
 
     for i in range(0,100):
-        print(train[i][1])
-        # print(train[i][2])
-        transform(train[i][0][0]).show()
-        input()
+        data = train[i]
+        # print(data[-1])
+        # transform(data[0][0]).show()
+        # transform(data[1][0]).show()
+        # transform(data[2][0]).show()
+        # input()

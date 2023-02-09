@@ -5,6 +5,7 @@ import pandas as pd
 import torchvision.transforms as T
 import torch
 import time
+from tqdm import tqdm
 from XLS_utils import XLS 
 import config
 from dataset import Dataset
@@ -41,7 +42,7 @@ if __name__ == "__main__":
     count_l = 0
 
     #["LCC","LMLO","RCC","RMLO"]
-    for i in range(len(train)):
+    for i in tqdm(range(len(train))):
         m = train[i][0].mean(dim=(1,2,3))
         s = train[i][0].std(dim=(1,2,3))
         mean += m
