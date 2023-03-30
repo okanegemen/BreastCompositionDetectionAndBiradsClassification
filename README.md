@@ -1,1 +1,1 @@
-Breast cancer detection pipeline from scratch
+Breast cancer detection, complete pipeline from scratch
